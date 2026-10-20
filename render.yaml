@@ -1,0 +1,57 @@
+# Render Blueprint: Dashboard → New → Blueprint → pick this GitHub repo.
+# Creates the API (Docker) and the admin panel (static site). The database lives on Supabase.
+services:
+  - type: web
+    name: chargeshare-api
+    runtime: docker
+    rootDir: backend
+    plan: starter # the free plan sleeps after 15 min idle, which breaks the background sweeper; starter is ~US$7/month
+    region: singapore
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: PUBLIC_BASE_URL
+        sync: false # e.g. https://chargeshare-api.onrender.com
+      - key: CORS_ORIGINS
+        sync: false # e.g. https://chargeshare-admin.onrender.com
+      - key: ADMIN_PHONES
+        sync: false
+      - key: OTP_PROVIDER
+        value: msg91
+      - key: MSG91_AUTH_KEY
+        sync: false
+      - key: MSG91_TEMPLATE_ID
+        sync: false
+      - key: DEMO_PHONE
+        sync: false
+      - key: DEMO_OTP
+        sync: false
+      - key: PAYMENT_PROVIDER
+        value: razorpay
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      - key: STORAGE_BACKEND
+        value: supabase
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+
+  - type: web
+    name: chargeshare-admin
+    runtime: static
+    rootDir: admin
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        sync: false # e.g. https://chargeshare-api.onrender.com

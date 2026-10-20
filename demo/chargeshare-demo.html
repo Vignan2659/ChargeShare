@@ -1,0 +1,1123 @@
+<title>ChargeShare Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+/* Layout: app header, then [phone mockup | guide panel] for the mobile app, or [sidebar | content] for the admin panel. */
+:root {
+  --bg: #F2F5F3; --surface: #FFFFFF; --surface-2: #EDF2EF; --ink: #16201A; --muted: #5B6A61; --line: #DAE3DD;
+  --accent: #0F9D58; --accent-ink: #0B7A44; --accent-soft: #E1F3E9; --on-accent: #FFFFFF;
+  --amber: #9A5A00; --amber-soft: #FCF0DA; --red: #C3352A; --red-soft: #FBE6E3; --blue: #1A64CE; --blue-soft: #E5EEFB;
+  --map-land: #E6EEE8; --map-road: #FFFFFF; --map-water: #CBE1EE; --map-park: #D3E8D7; --phone: #111613; --shadow: 0 18px 50px rgba(20, 40, 28, .16);
+  --f-display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --f-body: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0E1310; --surface: #161D19; --surface-2: #1D2621; --ink: #E4ECE7; --muted: #98A99F; --line: #2A3530;
+  --accent: #29B970; --accent-ink: #62D69A; --accent-soft: #15342A; --on-accent: #06140C;
+  --amber: #F0B45A; --amber-soft: #3A2A12; --red: #F07B70; --red-soft: #3E1C19; --blue: #7DAAF2; --blue-soft: #1A2A44;
+  --map-land: #1A231E; --map-road: #2B3631; --map-water: #183041; --map-park: #1D3226; --phone: #040605; --shadow: 0 18px 50px rgba(0, 0, 0, .5); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0E1310; --surface: #161D19; --surface-2: #1D2621; --ink: #E4ECE7; --muted: #98A99F; --line: #2A3530;
+  --accent: #29B970; --accent-ink: #62D69A; --accent-soft: #15342A; --on-accent: #06140C;
+  --amber: #F0B45A; --amber-soft: #3A2A12; --red: #F07B70; --red-soft: #3E1C19; --blue: #7DAAF2; --blue-soft: #1A2A44;
+  --map-land: #1A231E; --map-road: #2B3631; --map-water: #183041; --map-park: #1D3226; --phone: #040605; --shadow: 0 18px 50px rgba(0, 0, 0, .5); color-scheme: dark; }
+
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.45; }
+button { font: inherit; color: inherit; cursor: pointer; }
+input, select, textarea { font: inherit; color: var(--ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3, h4 { text-wrap: balance; margin: 0; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------- top bar ---------- */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--surface); border-bottom: 1px solid var(--line);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 10px; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.top-in { max-width: 1280px; margin: 0 auto; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 8px; font-family: var(--f-display); font-weight: 800; font-size: 20px; letter-spacing: -.01em; }
+.brand-mark { width: 30px; height: 30px; border-radius: 9px; background: var(--accent); display: grid; place-items: center; color: var(--on-accent); }
+.brand small { font-family: var(--f-body); font-weight: 600; font-size: 12px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; margin-left: 4px; }
+.seg { display: inline-flex; background: var(--surface-2); border-radius: 999px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: none; padding: 7px 14px; border-radius: 999px; font-weight: 600; color: var(--muted); }
+.seg button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.who { display: flex; align-items: center; gap: 8px; color: var(--muted); font-weight: 600; }
+.who select { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 7px 10px; font-weight: 600; }
+.spacer { flex: 1; }
+.ghost-btn { border: 1px solid var(--line); background: var(--surface); padding: 7px 12px; border-radius: 10px; font-weight: 600; color: var(--muted); }
+
+.wrap { max-width: 1280px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 48px; }
+
+/* ---------- mobile view layout ---------- */
+.mobile-view { display: grid; grid-template-columns: 400px minmax(0, 1fr); gap: 32px; align-items: start; }
+@media (max-width: 920px) { .mobile-view { grid-template-columns: minmax(0, 1fr); } }
+
+.phone { width: 100%; max-width: 390px; margin: 0 auto; background: var(--phone); border-radius: 46px; padding: 12px; box-shadow: var(--shadow); position: sticky; top: calc(env(safe-area-inset-top, 0px) + 76px); }
+@media (max-width: 920px) { .phone { position: relative; top: 0; } }
+.screen { background: var(--bg); border-radius: 36px; overflow: hidden; height: 760px; max-height: calc(100vh - 140px); min-height: 600px; display: flex; flex-direction: column; position: relative; }
+.status { display: flex; justify-content: space-between; align-items: center; padding: 12px 26px 4px; font-weight: 700; font-size: 13px; background: var(--surface); }
+.notch { width: 96px; height: 24px; border-radius: 20px; background: var(--phone); }
+.appbar { display: flex; align-items: center; gap: 8px; padding: 8px 14px 12px; background: var(--surface); border-bottom: 1px solid var(--line); min-height: 52px; }
+.appbar h2 { font-size: 17px; font-weight: 800; flex: 1; }
+.back { border: 0; background: var(--surface-2); width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; }
+.body { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.body.flush { padding: 0; gap: 0; }
+.tabbar { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--surface); border-top: 1px solid var(--line); padding: 6px 4px 16px; }
+.tabbar button { border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; font-weight: 600; color: var(--muted); padding: 4px; position: relative; }
+.tabbar button.on { color: var(--accent-ink); }
+.tabbar .dot { position: absolute; top: 2px; right: calc(50% - 16px); background: var(--red); color: #fff; border-radius: 999px; font-size: 10px; min-width: 16px; height: 16px; display: grid; place-items: center; padding: 0 4px; }
+
+.push { position: absolute; left: 10px; right: 10px; top: 44px; z-index: 5; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 10px 12px; box-shadow: var(--shadow); display: flex; gap: 10px; align-items: flex-start; animation: drop .35s ease-out; }
+.push .app-ico { width: 28px; height: 28px; border-radius: 8px; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; flex: none; }
+.push b { display: block; font-size: 13px; }
+.push span { font-size: 12.5px; color: var(--muted); }
+@keyframes drop { from { transform: translateY(-16px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .push, .scanline { animation: none !important; } }
+
+/* ---------- phone UI pieces ---------- */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.card.tap { cursor: pointer; text-align: left; width: 100%; }
+.card.tap:hover { border-color: var(--accent); }
+.row { display: flex; align-items: center; gap: 8px; }
+.row.wrap-r { flex-wrap: wrap; }
+.row.between { justify-content: space-between; }
+.t-title { font-weight: 800; font-size: 15.5px; }
+.t-big { font-family: var(--f-display); font-weight: 800; font-size: 28px; letter-spacing: -.01em; }
+.small { font-size: 12.5px; color: var(--muted); }
+.lbl { font-size: 13px; font-weight: 700; }
+.price { font-weight: 800; color: var(--accent-ink); }
+.sec-h { font-weight: 800; font-size: 15px; margin-top: 4px; }
+.btn { border: 0; border-radius: 12px; padding: 12px 14px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; background: var(--accent); color: var(--on-accent); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.sec { background: var(--accent-soft); color: var(--accent-ink); }
+.btn.danger { background: var(--red-soft); color: var(--red); }
+.btn.plain { background: none; color: var(--accent-ink); }
+.btn.sm { width: auto; padding: 7px 12px; font-size: 13px; border-radius: 10px; }
+.btns { display: flex; gap: 8px; }
+.btns > * { flex: 1; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 12px; font-weight: 600; font-size: 13px; }
+.chip.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.badge { display: inline-block; border-radius: 999px; padding: 2px 9px; font-size: 11.5px; font-weight: 700; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+.b-green { background: var(--accent-soft); color: var(--accent-ink); }
+.b-amber { background: var(--amber-soft); color: var(--amber); }
+.b-red { background: var(--red-soft); color: var(--red); }
+.b-blue { background: var(--blue-soft); color: var(--blue); }
+.notice { border-radius: 12px; padding: 10px 12px; font-size: 13px; display: flex; gap: 8px; align-items: flex-start; }
+.n-blue { background: var(--blue-soft); color: var(--blue); }
+.n-amber { background: var(--amber-soft); color: var(--amber); }
+.n-green { background: var(--accent-soft); color: var(--accent-ink); }
+.n-red { background: var(--red-soft); color: var(--red); }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field input, .field textarea, .field select { border: 1px solid var(--line); background: var(--surface); border-radius: 11px; padding: 10px 12px; font-size: 15px; width: 100%; }
+.field textarea { min-height: 74px; resize: vertical; }
+.check { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; cursor: pointer; }
+.check input { width: 18px; height: 18px; accent-color: var(--accent); margin-top: 2px; flex: none; }
+.info { display: flex; gap: 8px; align-items: flex-start; font-size: 13.5px; }
+.info svg { flex: none; color: var(--muted); margin-top: 1px; }
+.hr { height: 1px; background: var(--line); }
+.stars { color: #E9A800; font-weight: 700; display: inline-flex; align-items: center; gap: 3px; }
+.photo { height: 170px; background: linear-gradient(135deg, var(--accent-soft), var(--surface-2)); display: grid; place-items: center; color: var(--accent-ink); position: relative; }
+.photo .ph-lbl { position: absolute; bottom: 8px; right: 10px; font-size: 11px; color: var(--muted); }
+.thumb { width: 58px; height: 58px; border-radius: 10px; background: linear-gradient(135deg, var(--accent-soft), var(--surface-2)); display: grid; place-items: center; color: var(--accent-ink); flex: none; }
+.empty { text-align: center; padding: 28px 12px; color: var(--muted); display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.empty h3 { color: var(--ink); font-size: 16px; }
+
+/* map */
+.mapbox { position: relative; height: 330px; background: var(--map-land); overflow: hidden; }
+.mapbox svg.base { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pin { position: absolute; transform: translate(-50%, -100%); border: 2px solid var(--surface); background: var(--accent); color: var(--on-accent); font-weight: 800; font-size: 11.5px; padding: 3px 8px; border-radius: 999px; display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+.pin.sel { background: var(--accent-ink); transform: translate(-50%, -100%) scale(1.12); z-index: 2; }
+.me { position: absolute; width: 16px; height: 16px; border-radius: 50%; background: var(--blue); border: 3px solid var(--surface); transform: translate(-50%, -50%); box-shadow: 0 0 0 8px color-mix(in srgb, var(--blue) 22%, transparent); }
+.map-tools { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; gap: 6px; }
+.float { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 12.5px; box-shadow: 0 2px 6px rgba(0,0,0,.1); }
+.list-pad { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+
+/* scan */
+.cam { height: 360px; background: #0b0f0d; position: relative; display: grid; place-items: center; overflow: hidden; }
+.cam .frame { width: 210px; height: 210px; border: 3px solid #fff; border-radius: 18px; position: relative; overflow: hidden; }
+.scanline { position: absolute; left: 0; right: 0; height: 2px; background: #3DE08A; box-shadow: 0 0 12px #3DE08A; animation: scan 2s linear infinite; }
+@keyframes scan { from { top: 0; } to { top: 100%; } }
+.cam .hint { position: absolute; bottom: 14px; color: #d8e6dd; font-size: 12.5px; }
+.qrbox { background: #fff; padding: 12px; border-radius: 12px; display: grid; place-items: center; min-height: 204px; min-width: 204px; }
+
+/* ---------- guide panel ---------- */
+.guide { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.panel h3 { font-family: var(--f-display); font-weight: 800; font-size: 20px; letter-spacing: -.01em; }
+.eyebrow { font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.intro h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(26px, 3.4vw, 38px); letter-spacing: -.02em; line-height: 1.08; }
+.intro p { color: var(--muted); max-width: 62ch; margin: 8px 0 0; font-size: 15px; }
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.step { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 10px; border-radius: 12px; }
+.step.cur { background: var(--accent-soft); }
+.step .n { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; font-weight: 800; font-size: 12px; color: var(--muted); }
+.step.done .n { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.step b { display: block; font-size: 14px; }
+.step span { font-size: 12.5px; color: var(--muted); }
+.screens { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.screens h4 { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.screens button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 5px 0; color: var(--accent-ink); font-weight: 600; }
+.screens button:hover { text-decoration: underline; }
+.log { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; }
+.log-item { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 8px; font-size: 13px; }
+.log-item time { color: var(--muted); font-family: var(--f-mono); font-size: 11.5px; padding-top: 2px; }
+.log-item .k { font-weight: 700; }
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.rule { background: var(--surface-2); border-radius: 12px; padding: 12px; font-size: 13px; }
+.rule b { display: block; margin-bottom: 2px; }
+
+/* ---------- admin ---------- */
+.admin { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 860px) { .admin { grid-template-columns: minmax(0, 1fr); } .side { flex-direction: row !important; overflow-x: auto; position: static !important; } .side button { white-space: nowrap; } }
+.side { display: flex; flex-direction: column; gap: 4px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 76px); }
+.side button { border: 0; background: none; text-align: left; padding: 9px 12px; border-radius: 10px; font-weight: 600; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+.side button.on { background: var(--accent-soft); color: var(--accent-ink); font-weight: 800; }
+.side .cnt { background: var(--amber-soft); color: var(--amber); border-radius: 999px; padding: 0 7px; font-size: 12px; }
+.a-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.a-head h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; letter-spacing: -.01em; }
+.a-head p { margin: 4px 0 0; color: var(--muted); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+.tile .k { color: var(--muted); font-size: 12.5px; font-weight: 600; }
+.tile .v { font-family: var(--f-display); font-weight: 800; font-size: 28px; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.tile.attn { border-color: var(--amber); }
+.tbl-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 11.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.money { font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+th.money { text-align: right; }
+.acts { display: flex; gap: 6px; flex-wrap: wrap; }
+.a-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+.a-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.kv { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; font-weight: 600; }
+.filter { display: flex; gap: 6px; flex-wrap: wrap; }
+.docimg { height: 110px; border-radius: 10px; border: 1px dashed var(--line); background: repeating-linear-gradient(45deg, var(--surface-2), var(--surface-2) 8px, var(--surface) 8px, var(--surface) 16px); display: grid; place-items: center; color: var(--muted); font-size: 12.5px; font-weight: 600; }
+
+/* ---------- modal & toast ---------- */
+.modal-bg { position: fixed; inset: 0; background: rgba(8, 14, 10, .5); z-index: 50; display: grid; place-items: center; padding: 16px; }
+.modal { background: var(--surface); border-radius: 18px; padding: 20px; width: min(440px, 100%); display: flex; flex-direction: column; gap: 12px; box-shadow: var(--shadow); max-height: 90vh; overflow-y: auto; }
+.modal h3 { font-size: 18px; font-weight: 800; }
+.modal p { margin: 0; color: var(--muted); }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-weight: 600; z-index: 60; max-width: calc(100% - 32px); }
+</style>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><span class="brand-mark" aria-hidden="true" id="brandIcon"></span>ChargeShare <small>Prototype</small></div>
+    <div class="seg" role="tablist" aria-label="View">
+      <button id="vApp" data-act="view" data-arg="app" role="tab">Mobile app</button>
+      <button id="vAdmin" data-act="view" data-arg="admin" role="tab">Admin panel</button>
+    </div>
+    <label class="who" id="whoWrap" for="whoSel">Logged in as
+      <select id="whoSel"></select>
+    </label>
+    <div class="spacer"></div>
+    <button class="ghost-btn" data-act="reset">Reset demo</button>
+  </div>
+</header>
+
+<div class="wrap" id="root"></div>
+<div id="modalRoot"></div>
+<div id="toastRoot"></div>
+
+<script>
+/* =====================================================================
+   ChargeShare clickable prototype. All data is sample data held in memory.
+   ===================================================================== */
+const COMMISSION = 0.10;
+const CONNECTORS = ["15A socket", "Type 2 (AC)", "CCS2 (DC)", "Bharat AC-001", "Bharat DC-001", "LECCS (2W)", "Ather connector"];
+const VEH = { "2W": "Scooter / bike", "3W": "Auto", "4W": "Car" };
+
+// ---------- icons ----------
+const P = {
+  bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/>',
+  map: '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/>',
+  cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  home: '<path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="m12 12-2 4h4l-2 4"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
+  back: '<path d="M15 5 8 12l7 7"/>',
+  pin: '<path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  car: '<path d="M4 16v-4l2-5h12l2 5v4"/><path d="M3 16h18v3H3z"/><circle cx="7.5" cy="16" r="1"/><circle cx="16.5" cy="16" r="1"/>',
+  plug: '<path d="M9 2v6M15 2v6M6 8h12v4a6 6 0 0 1-12 0V8zM12 18v4"/>',
+  qr: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/>',
+  phone: '<path d="M5 3h4l2 5-3 2a12 12 0 0 0 6 6l2-3 5 2v4a2 2 0 0 1-2 2A18 18 0 0 1 3 5a2 2 0 0 1 2-2z"/>',
+  nav: '<path d="m3 11 18-8-8 18-2-8-8-2z"/>',
+  check: '<path d="m5 12 5 5L20 7"/>',
+  star: '<path d="m12 3 2.8 5.8 6.2.9-4.5 4.4 1 6.2L12 17.4 6.5 20.3l1-6.2L3 9.7l6.2-.9L12 3z"/>',
+  alert: '<circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/>',
+  shield: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3z"/><path d="m9 12 2 2 4-4"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  key: '<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l3 3"/>',
+  wallet: '<rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M16 15h2"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',
+  list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  locate: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7"/>',
+  camera: '<path d="M4 8h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="4"/>',
+  out: '<path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/>',
+  trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+  edit: '<path d="M4 20h4L19 9l-4-4L4 16v4z"/>',
+  doc: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
+};
+const ico = (n, s = 18, sw = 2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]}</svg>`;
+document.getElementById("brandIcon").innerHTML = ico("bolt", 18, 2.4);
+
+// ---------- helpers ----------
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const rs = (paise, dp) => { const v = (paise || 0) / 100; const d = dp ?? (Number.isInteger(v) ? 0 : 2); return "₹" + v.toLocaleString("en-IN", { minimumFractionDigits: d, maximumFractionDigits: d }); };
+const DAYF = new Intl.DateTimeFormat("en-IN", { weekday: "short", day: "numeric", month: "short" });
+const TIMEF = new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit", hour12: true });
+const sameDay = (a, b) => a.toDateString() === b.toDateString();
+function dayLbl(d) { const t = new Date(); const tm = new Date(); tm.setDate(t.getDate() + 1); const y = new Date(); y.setDate(t.getDate() - 1);
+  if (sameDay(d, t)) return "Today"; if (sameDay(d, tm)) return "Tomorrow"; if (sameDay(d, y)) return "Yesterday"; return DAYF.format(d); }
+const tm = (d) => TIMEF.format(d);
+const endOf = (b) => new Date(b.start.getTime() + b.mins * 60000);
+const slot = (b) => `${dayLbl(b.start)}, ${tm(b.start)} – ${tm(endOf(b))}`;
+const durLbl = (m) => { const h = Math.floor(m / 60), r = m % 60; return h && r ? `${h}h ${r}m` : h ? `${h} hr${h > 1 ? "s" : ""}` : `${m} min`; };
+const priceLbl = (c) => `${rs(c.price)}/${c.mode === "kwh" ? "kWh" : "hr"}`;
+const hoursLbl = (c) => (c.open === c.close ? "Open 24 hours" : `${c.open} – ${c.close}`);
+const toMin = (hhmm) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; };
+const inWin = (t, o, c) => (o === c ? true : o < c ? t >= o && t < c : t >= o || t < c);
+const nowClock = () => new Date().toTimeString().slice(0, 5);
+const at = (dayOffset, h, m = 0) => { const d = new Date(); d.setDate(d.getDate() + dayOffset); d.setHours(h, m, 0, 0); return d; };
+const qrCode = () => Array.from({ length: 8 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 32)]).join("").replace(/(.{4})/, "$1-");
+const STATUS = {
+  pending_payment: ["Payment pending", "b-amber"], requested: ["Waiting for host", "b-amber"], confirmed: ["Confirmed", "b-green"],
+  active: ["Charging", "b-blue"], completed: ["Completed", ""], cancelled: ["Cancelled", "b-red"], declined: ["Declined", "b-red"], expired: ["Expired", ""],
+};
+const CSTATUS = { pending: ["In review", "b-amber"], approved: ["Live", "b-green"], rejected: ["Needs changes", "b-red"], paused: ["Paused", ""] };
+const HSTATUS = { none: ["Not a host", ""], pending: ["In review", "b-amber"], approved: ["Verified host", "b-green"], rejected: ["Rejected", "b-red"] };
+const badge = ([label, cls]) => `<span class="badge ${cls}">${esc(label)}</span>`;
+
+// ---------- sample data ----------
+function seed() {
+  const users = {
+    priya: { id: "priya", name: "Priya Sharma", phone: "+91 90000 00003", vehicle: "4W", host: "none", upi: "", note: "", docs: 0, deleted: false },
+    karthik: { id: "karthik", name: "Karthik Reddy", phone: "+91 90000 00004", vehicle: "2W", host: "none", upi: "", note: "", docs: 0, deleted: false },
+    ravi: { id: "ravi", name: "Ravi Kumar", phone: "+91 90000 00002", vehicle: "4W", host: "approved", upi: "ravi@okaxis", note: "", docs: 1, deleted: false },
+    anita: { id: "anita", name: "Anita Rao", phone: "+91 90000 00005", vehicle: "2W", host: "none", upi: "", note: "", docs: 0, deleted: false },
+    suresh: { id: "suresh", name: "Suresh Naidu", phone: "+91 90000 00006", vehicle: "4W", host: "pending", upi: "suresh.n@ybl", note: "", docs: 2, deleted: false },
+  };
+  const base = { photos: 2, note: "", reviews: [], noc: true, society: false, societyName: "", safety: true };
+  const chargers = [
+    { ...base, id: 1, host: "ravi", title: "Gachibowli Villa Charger", address: "Road 2, Gachibowli, Hyderabad", x: 0.38, y: 0.52, vehicles: ["4W"], connector: "Type 2 (AC)", kw: 7.4, mode: "kwh", price: 1600, open: "06:00", close: "23:00", instant: false, status: "approved", qr: "GV7K-2QXA", access: "Gate 2, villa no. 14. Charger is on the left wall of the car porch.", desc: "Covered car porch with CCTV. Wi-Fi password at the gate.", reviews: [{ by: "Priya", stars: 5, text: "Easy to find and Ravi was very helpful." }, { by: "Arjun", stars: 4, text: "Good charger, gate took a minute." }] },
+    { ...base, id: 2, host: "ravi", title: "Kondapur Apartment Socket", address: "Botanical Garden Rd, Kondapur", x: 0.52, y: 0.28, vehicles: ["2W", "3W"], connector: "15A socket", kw: 3.3, mode: "hour", price: 2500, open: "00:00", close: "00:00", instant: true, status: "approved", qr: "KA4P-8MZT", access: "Basement B1, slot 42. Tell the guard you're charging at 304.", desc: "Plain 15A socket on a dedicated circuit. Bring your own charger cable.", reviews: [{ by: "Karthik", stars: 5, text: "Perfect for my Ather." }] },
+    { ...base, id: 3, host: "ravi", title: "Madhapur Office Parking", address: "Hitech City Rd, Madhapur", x: 0.72, y: 0.42, vehicles: ["2W", "4W"], connector: "Type 2 (AC)", kw: 11, mode: "hour", price: 12000, open: "08:00", close: "20:00", instant: true, status: "approved", qr: "MO9C-3HRD", access: "Visitor parking, level P2, bay 7.", desc: "Office parking, available weekdays and weekends.", safety: false },
+    { ...base, id: 4, host: "ravi", title: "Jubilee Hills Home Charger", address: "Road 36, Jubilee Hills", x: 0.86, y: 0.66, vehicles: ["4W"], connector: "Bharat AC-001", kw: 3.3, mode: "kwh", price: 1400, open: "18:00", close: "08:00", instant: false, status: "approved", qr: "JH2B-6WNE", access: "Ring bell at house 8-2-293.", desc: "Night charging only.", society: false },
+    { ...base, id: 5, host: "suresh", title: "Kokapet Society Charger", address: "Tower C, Lake View Residency, Kokapet", x: 0.18, y: 0.78, vehicles: ["2W", "4W"], connector: "Type 2 (AC)", kw: 7.4, mode: "hour", price: 9000, open: "00:00", close: "00:00", instant: false, status: "pending", qr: "KS5D-1LPV", access: "Tower C basement, slot C-17.", desc: "Society-approved charger for residents.", society: true, societyName: "Lake View Residency", safety: false, photos: 3 },
+  ];
+  const mk = (id, charger, driver, start, mins, status, extra = {}) => {
+    const c = chargers.find((x) => x.id === charger);
+    const amount = c.mode === "kwh" ? Math.ceil(c.price * c.kw * (mins / 60)) : Math.ceil(c.price * (mins / 60));
+    return { id, charger, driver, host: c.host, start, mins, status, mode: c.mode, unit: c.price, amount, final: null, refund: 0, fee: 0, earn: 0, kwh: null, vehicle: users[driver].vehicle, note: "", reason: "", by: "", payout: null, reviewed: [], ...extra };
+  };
+  const done = (b, kwh) => { b.final = b.mode === "kwh" ? Math.min(b.amount, Math.ceil(kwh * b.unit)) : b.amount; b.refund = b.amount - b.final; b.kwh = kwh ?? null; b.fee = Math.round(b.final * COMMISSION); b.earn = b.final - b.fee; return b; };
+  const bookings = [
+    mk(1001, 2, "karthik", at(1, 9), 120, "requested", { vehicle: "2W", note: "Ather 450X, grey" }),
+    done(mk(1002, 1, "priya", at(-1, 19), 120, "completed", { reviewed: ["priya"] }), 12.4),
+    done(mk(1003, 2, "karthik", at(-3, 8), 90, "completed", { vehicle: "2W" })),
+    mk(1004, 3, "priya", at(-2, 10), 60, "cancelled", { refund: 0, reason: "Plans changed", by: "driver" }),
+  ];
+  bookings[3].refund = bookings[3].amount;
+  const reports = [{ id: 1, from: "karthik", about: "Booking #1003", cat: "Charger not working", msg: "The socket was a bit loose. It worked after I pushed the plug in properly.", status: "open", reply: "", when: at(-3, 10) }];
+  return { users, chargers, bookings, reports, payouts: [], log: [], nextB: 1005, nextC: 6, nextP: 1 };
+}
+
+// ---------- app state ----------
+let D = seed();
+const UI = {
+  view: "app", who: "priya", loggedIn: { priya: true, karthik: true, ravi: true, anita: true, suresh: true },
+  nav: [{ s: "tab", tab: "find" }], vfilter: "", listMode: "map", selPin: null,
+  book: null, scope: "upcoming", adminTab: "dash", adminFilter: {}, push: null,
+};
+function initialNav(who) { return [{ s: "tab", tab: who === "ravi" || who === "suresh" ? "host" : "find" }]; }
+const me = () => D.users[UI.who];
+const cur = () => UI.nav[UI.nav.length - 1];
+const go = (scr) => { UI.nav.push(scr); render(); scrollPhoneTop(); };
+const back = () => { if (UI.nav.length > 1) UI.nav.pop(); render(); };
+const tab = (t) => { UI.nav = [{ s: "tab", tab: t }]; render(); scrollPhoneTop(); };
+const charger = (id) => D.chargers.find((c) => c.id === Number(id));
+const booking = (id) => D.bookings.find((b) => b.id === Number(id));
+const rating = (c) => (c.reviews.length ? c.reviews.reduce((a, r) => a + r.stars, 0) / c.reviews.length : null);
+const blocking = (b) => ["pending_payment", "requested", "confirmed", "active"].includes(b.status);
+function scrollPhoneTop() { requestAnimationFrame(() => { const b = document.querySelector(".screen .body"); if (b) b.scrollTop = 0; }); }
+
+function log(kind, text) { D.log.unshift({ t: nowClock(), kind, text }); }
+function notify(userId, title, body, bookingId) {
+  const u = D.users[userId];
+  log("Push → " + (u ? u.name.split(" ")[0] : userId), `${title}: ${body}`);
+  if (UI.view === "app" && UI.who === userId) { UI.push = { title, body, bookingId }; clearTimeout(notify.t); notify.t = setTimeout(() => { UI.push = null; render(); }, 4200); }
+}
+function toast(msg) {
+  const r = document.getElementById("toastRoot");
+  r.innerHTML = `<div class="toast" role="status">${esc(msg)}</div>`;
+  clearTimeout(toast.t); toast.t = setTimeout(() => (r.innerHTML = ""), 2600);
+}
+
+// ---------- modal (the viewer blocks alert/confirm/prompt) ----------
+let modalCb = null;
+function modal({ title, text = "", fields = [], ok = "Confirm", danger = false, extra = "", onOk }) {
+  modalCb = onOk;
+  document.getElementById("modalRoot").innerHTML = `<div class="modal-bg" data-act="modalClose"><div class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+    <h3>${esc(title)}</h3>${text ? `<p>${text}</p>` : ""}${extra}
+    ${fields.map((f) => f.type === "check"
+      ? `<label class="check"><input type="checkbox" id="m_${f.id}" ${f.value ? "checked" : ""}> <span>${esc(f.label)}</span></label>`
+      : `<div class="field"><label class="lbl" for="m_${f.id}">${esc(f.label)}</label>${f.type === "area" ? `<textarea id="m_${f.id}">${esc(f.value || "")}</textarea>` : `<input id="m_${f.id}" value="${esc(f.value || "")}" ${f.num ? 'inputmode="decimal"' : ""} placeholder="${esc(f.ph || "")}">`}</div>`).join("")}
+    <div class="btns"><button class="btn sec" data-act="modalClose">Cancel</button><button class="btn ${danger ? "danger" : ""}" data-act="modalOk">${esc(ok)}</button></div>
+  </div></div>`;
+  const first = document.querySelector(".modal input, .modal textarea"); if (first) first.focus();
+  modalCb.fields = fields;
+}
+function closeModal() { document.getElementById("modalRoot").innerHTML = ""; modalCb = null; }
+function modalOk() {
+  if (!modalCb) return closeModal();
+  const vals = {};
+  (modalCb.fields || []).forEach((f) => { const el = document.getElementById("m_" + f.id); vals[f.id] = f.type === "check" ? el.checked : el.value.trim(); });
+  const cb = modalCb; closeModal();
+  if (cb(vals) !== false) render();
+}
+
+// ---------- business rules (same as the real backend) ----------
+function estimate(c, mins) { return c.mode === "kwh" ? Math.max(100, Math.ceil(c.price * c.kw * (mins / 60))) : Math.max(100, Math.ceil(c.price * (mins / 60))); }
+function settle(b, final) { b.final = final; b.fee = Math.round(final * COMMISSION); b.earn = final - b.fee; }
+function fits(c, start, mins, ignoreId) {
+  const o = toMin(c.open), cl = toMin(c.close), end = start.getTime() + mins * 60000;
+  for (let t = start.getTime(); t < end; t += 5 * 60000) { const d = new Date(t); if (!inWin(d.getHours() * 60 + d.getMinutes(), o, cl)) return false; }
+  return !D.bookings.some((b) => b.charger === c.id && b.id !== ignoreId && blocking(b) && b.start.getTime() < end && endOf(b).getTime() > start.getTime());
+}
+function liveChargers() { return D.chargers.filter((c) => c.status === "approved" && D.users[c.host].host === "approved" && !D.users[c.host].deleted); }
+
+// ======================================================================
+//  MOBILE APP SCREENS
+// ======================================================================
+function scrLogin() {
+  const u = me();
+  return { title: null, noTabs: true, html: `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:40px;text-align:center">
+      <div class="brand-mark" style="width:72px;height:72px;border-radius:22px">${ico("bolt", 40, 2.2)}</div>
+      <div class="t-big">ChargeShare</div>
+      <div class="small" style="font-size:14px">Charge your EV at a neighbour's charger.<br>Or earn from yours when it's free.</div>
+    </div>
+    <div class="field" style="margin-top:24px"><label class="lbl" for="lgPhone">Mobile number</label><input id="lgPhone" value="${esc(u.phone)}" inputmode="tel"></div>
+    <div class="field"><label class="lbl" for="lgOtp">OTP sent by SMS</label><input id="lgOtp" class="mono" value="482913" inputmode="numeric" maxlength="6"></div>
+    <div class="notice n-blue">${ico("info", 16)}<span>In the real app the 6-digit OTP arrives by SMS. Here it's filled in for you.</span></div>
+    <button class="btn" data-act="login">Verify and continue</button>
+    <div class="small" style="text-align:center">By continuing you agree to the Terms and Privacy Policy.</div>` };
+}
+
+function mapSvg() {
+  return `<svg class="base" viewBox="0 0 400 330" preserveAspectRatio="none" aria-hidden="true">
+    <rect width="400" height="330" fill="var(--map-land)"/>
+    <path d="M250 205 q40 -18 70 8 q22 22 -8 44 q-34 22 -66 -6 q-22 -22 4 -46z" fill="var(--map-water)"/>
+    <path d="M20 40 q30 -10 60 8 q20 18 -6 36 q-30 12 -54 -10z" fill="var(--map-park)"/>
+    <path d="M0 150 C 90 140 170 175 400 120" stroke="var(--map-road)" stroke-width="10" fill="none"/>
+    <path d="M150 0 C 160 110 130 210 170 330" stroke="var(--map-road)" stroke-width="8" fill="none"/>
+    <path d="M0 260 C 120 250 240 285 400 250" stroke="var(--map-road)" stroke-width="6" fill="none"/>
+    <path d="M300 0 C 280 90 320 180 290 330" stroke="var(--map-road)" stroke-width="6" fill="none"/>
+    <path d="M40 330 L 230 60 L 400 40" stroke="var(--map-road)" stroke-width="4" fill="none"/>
+    <g font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="700" fill="var(--muted)" letter-spacing="1">
+      <text x="110" y="200">GACHIBOWLI</text><text x="180" y="78">KONDAPUR</text><text x="268" y="122">MADHAPUR</text><text x="318" y="300">JUBILEE HILLS</text><text x="34" y="300">KOKAPET</text>
+    </g></svg>`;
+}
+
+function scrFind() {
+  const vf = UI.vfilter;
+  const list = liveChargers().filter((c) => !vf || c.vehicles.includes(vf));
+  const sel = list.find((c) => c.id === UI.selPin);
+  const filters = `<div class="chips">${[["", "All"], ["2W", "Scooter"], ["3W", "Auto"], ["4W", "Car"]].map(([v, l]) => `<button class="chip ${vf === v ? "on" : ""}" data-act="vfilter" data-arg="${v}">${l}</button>`).join("")}</div>`;
+  const header = `<div style="padding:12px 14px 10px;background:var(--surface);display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--line)">
+      <div class="row between"><div class="t-title" style="font-size:19px">Chargers near you</div>
+      <button class="chip" data-act="listMode">${UI.listMode === "map" ? ico("list", 14) + " List" : ico("map", 14) + " Map"}</button></div>${filters}</div>`;
+  if (UI.listMode === "list") {
+    return { flush: true, html: header + `<div class="list-pad">${list.length ? list.map(chargerCard).join("") : `<div class="empty"><h3>No chargers for this vehicle</h3><span>Try another filter.</span></div>`}</div>` };
+  }
+  const pins = list.map((c) => `<button class="pin ${c.id === UI.selPin ? "sel" : ""}" style="left:${c.x * 100}%;top:${c.y * 100}%" data-act="pin" data-arg="${c.id}" aria-label="${esc(c.title)}">${ico("bolt", 11, 3)}${priceLbl(c)}</button>`).join("");
+  return { flush: true, html: header + `<div class="mapbox">${mapSvg()}<span class="me" style="left:46%;top:46%" title="You are here"></span>${pins}
+      <div class="map-tools"><span class="float">${list.length} chargers within 10 km</span><span class="float">${ico("locate", 13)}</span></div></div>
+      <div class="list-pad">${sel ? chargerCard(sel) : `<div class="small" style="text-align:center">Tap a price pin to see the charger.</div>`}
+      ${!sel ? list.slice(0, 2).map(chargerCard).join("") : ""}</div>` };
+}
+
+function chargerCard(c) {
+  const r = rating(c);
+  return `<button class="card tap" data-act="open" data-arg="charger:${c.id}">
+    <div class="row between" style="align-items:flex-start"><div style="min-width:0"><div class="t-title">${esc(c.title)}</div>
+    <div class="small">${esc(c.connector)} · ${c.kw} kW · ${c.vehicles.map((v) => VEH[v]).join(", ")}</div></div><div class="price">${priceLbl(c)}</div></div>
+    <div class="row wrap-r">${r ? `<span class="stars">${ico("star", 13)} ${r.toFixed(1)}</span>` : `<span class="small">New</span>`}<span class="small">· ${hoursLbl(c)}</span>
+    ${c.safety ? badge(["Safety checked", "b-green"]) : ""}${c.instant ? badge(["Instant book", "b-blue"]) : ""}${c.society ? badge(["Residents only", "b-amber"]) : ""}</div></button>`;
+}
+
+function scrCharger(id) {
+  const c = charger(id); const r = rating(c); const mine = c.host === UI.who;
+  const busy = D.bookings.filter((b) => b.charger === c.id && blocking(b) && endOf(b) > new Date()).sort((a, b) => a.start - b.start);
+  return { title: "Charger", flush: true, html: `
+    <div class="photo">${ico("plug", 54, 1.6)}<span class="ph-lbl">Photo 1 of ${c.photos}</span></div>
+    <div class="list-pad">
+      <div><div class="t-title" style="font-size:20px">${esc(c.title)}</div>
+      <div class="row wrap-r" style="margin-top:6px">${r ? `<span class="stars">${ico("star", 14)} ${r.toFixed(1)}</span><span class="small">(${c.reviews.length} reviews)</span>` : `<span class="small">No ratings yet</span>`}
+      ${c.safety ? badge(["Safety checked", "b-green"]) : ""}${c.instant ? badge(["Instant book", "b-blue"]) : ""}</div></div>
+      <div class="card"><div class="row between"><span class="t-title price" style="font-size:20px">${priceLbl(c)}</span><span class="small">Hosted by ${esc(D.users[c.host].name.split(" ")[0])}</span></div><div class="hr"></div>
+        <div class="info">${ico("bolt", 16)}<span><b>Charger type:</b> ${esc(c.connector)} · ${c.kw} kW</span></div>
+        <div class="info">${ico("car", 16)}<span><b>Vehicles:</b> ${c.vehicles.map((v) => VEH[v]).join(", ")}</span></div>
+        <div class="info">${ico("wallet", 16)}<span><b>Charging price:</b> ${c.mode === "kwh" ? "per unit used (kWh)" : "per hour of the slot"}</span></div>
+        <div class="info">${ico("clock", 16)}<span>${hoursLbl(c)}</span></div>
+        <div class="info">${ico("pin", 16)}<span>${esc(c.address)}</span></div></div>
+      ${c.mode === "kwh" ? `<div class="notice n-blue">${ico("info", 16)}<span>You pay the maximum for your slot upfront. Unused units are refunded automatically after charging.</span></div>` : ""}
+      ${c.society ? `<div class="notice n-amber">${ico("home", 16)}<span>Only for residents of ${esc(c.societyName)}. The host confirms before accepting.</span></div>` : ""}
+      ${c.desc ? `<div style="font-size:14px">${esc(c.desc)}</div>` : ""}
+      ${busy.length ? `<div class="card"><div class="lbl">Already booked</div>${busy.map((b) => `<div class="small">${slot(b)}</div>`).join("")}</div>` : ""}
+      <button class="btn sec" data-act="toast" data-arg="Opens Google Maps / Apple Maps with directions">${ico("nav", 16)} Directions</button>
+      ${mine ? `<div class="notice n-green">${ico("info", 16)}<span>This is your own charger.</span></div>` : `<button class="btn" data-act="startBook" data-arg="${c.id}">${ico("cal", 16)} Book a slot</button>`}
+      <div class="sec-h">Reviews</div>
+      ${c.reviews.length ? c.reviews.map((rv) => `<div class="card"><div class="row between"><b>${esc(rv.by)}</b><span class="stars">${ico("star", 13)} ${rv.stars}</span></div>${rv.text ? `<div style="font-size:13.5px">${esc(rv.text)}</div>` : ""}</div>`).join("") : `<div class="small">No reviews yet.</div>`}
+      <button class="btn plain" data-act="open" data-arg="report:Charger: ${esc(c.title)}">Report this listing</button>
+    </div>` };
+}
+
+function scrBook(id) {
+  const c = charger(id); const u = me();
+  if (!UI.book || UI.book.c !== c.id) UI.book = { c: c.id, day: 0, start: null, mins: 60, vehicle: c.vehicles.includes(u.vehicle) ? u.vehicle : c.vehicles[0], note: "" };
+  const bk = UI.book;
+  const days = Array.from({ length: 7 }, (_, i) => at(i, 0));
+  const starts = [];
+  for (let m = 0; m < 1440; m += 30) { const d = at(bk.day, 0, m); if (d.getTime() < Date.now() + 5 * 60000) continue; if (fits(c, d, 30)) starts.push(d); }
+  const startD = bk.start ? new Date(bk.start) : null;
+  const durs = [30, 60, 90, 120, 180, 240, 360].filter((m) => !startD || fits(c, startD, m));
+  if (startD && !durs.includes(bk.mins)) bk.mins = durs[0] || 30;
+  const total = startD ? estimate(c, bk.mins) : 0;
+  return { title: "Book a slot", html: `
+    <div class="card"><div class="t-title">${esc(c.title)}</div><div class="small">${priceLbl(c)} · ${esc(c.connector)} · ${c.kw} kW</div></div>
+    <div class="sec-h">Day</div><div class="chips">${days.map((d, i) => `<button class="chip ${i === bk.day ? "on" : ""}" data-act="bkDay" data-arg="${i}">${dayLbl(d)}</button>`).join("")}</div>
+    <div class="sec-h">Start time</div>
+    ${starts.length ? `<div class="chips">${starts.map((d) => `<button class="chip ${startD && d.getTime() === startD.getTime() ? "on" : ""}" data-act="bkStart" data-arg="${d.getTime()}">${tm(d)}</button>`).join("")}</div>` : `<div class="small">No free slots on this day. Try another day.</div>`}
+    <div class="sec-h">How long?</div><div class="chips">${durs.map((m) => `<button class="chip ${bk.mins === m ? "on" : ""}" data-act="bkDur" data-arg="${m}">${durLbl(m)}</button>`).join("")}</div>
+    ${c.vehicles.length > 1 ? `<div class="sec-h">Your vehicle</div><div class="chips">${c.vehicles.map((v) => `<button class="chip ${bk.vehicle === v ? "on" : ""}" data-act="bkVeh" data-arg="${v}">${VEH[v]}</button>`).join("")}</div>` : ""}
+    <div class="field"><label class="lbl" for="bkNote">Vehicle details (optional)</label><input id="bkNote" value="${esc(bk.note)}" placeholder="e.g. Nexon EV, white, TS09 AB 1234" data-input="bkNote"></div>
+    ${startD ? `<div class="card"><div class="small">${dayLbl(startD)}, ${tm(startD)} – ${tm(new Date(startD.getTime() + bk.mins * 60000))}</div>
+      <div class="row between"><span class="t-title">Total</span><span class="t-title num">${rs(total, 2)}</span></div>
+      <div class="small">${c.mode === "kwh" ? `${rs(c.price)} × ${c.kw} kW × ${durLbl(bk.mins)} (maximum). Unused units refunded.` : `${rs(c.price)}/hr × ${durLbl(bk.mins)}`}</div></div>` : ""}
+    <div class="notice n-blue">${ico("info", 16)}<span>Free cancellation up to 1 hour before your slot. Later cancellations get a 50% refund.</span></div>
+    <button class="btn" data-act="confirmBook" ${startD ? "" : "disabled"}>${startD ? `Pay ${rs(total)} and book` : "Choose a start time"}</button>` };
+}
+
+function scrPay(id) {
+  const b = booking(id); const c = charger(b.charger);
+  return { title: "Payment", html: `
+    <div class="card" style="align-items:center;text-align:center"><div class="small">Paying for booking #${b.id}</div><div class="t-big num">${rs(b.amount, 2)}</div><div class="small">${esc(c.title)} · ${slot(b)}</div></div>
+    <div class="sec-h">Pay with</div>
+    ${["Google Pay (UPI)", "PhonePe (UPI)", "Paytm (UPI)", "Any UPI ID", "Debit / credit card"].map((m, i) => `<label class="check card" style="flex-direction:row"><input type="radio" name="pm" ${i === 0 ? "checked" : ""}> <span>${m}</span></label>`).join("")}
+    <div class="notice n-blue">${ico("shield", 16)}<span>Secured by Razorpay. ChargeShare never sees your card or UPI PIN.</span></div>
+    <button class="btn" data-act="pay" data-arg="${b.id}" id="payBtn">Pay ${rs(b.amount, 2)}</button>
+    <button class="btn plain" data-act="open" data-arg="booking:${b.id}">Pay later (slot held for 15 min)</button>` };
+}
+
+function scrBooking(id) {
+  const b = booking(id); const c = charger(b.charger); const isDriver = b.driver === UI.who;
+  const other = D.users[isDriver ? b.host : b.driver]; const shared = ["confirmed", "active"].includes(b.status);
+  const minsToStart = (b.start - Date.now()) / 60000;
+  const acts = [];
+  if (isDriver && b.status === "pending_payment") acts.push(`<button class="btn" data-act="open" data-arg="pay:${b.id}">Pay now</button>`);
+  if (isDriver && b.status === "requested") acts.push(`<div class="notice n-amber">${ico("clock", 16)}<span>Waiting for ${esc(other.name.split(" ")[0])} to accept. If they don't respond before your slot starts, you get a full refund.</span></div>`);
+  if (isDriver && b.status === "confirmed") acts.push(`<button class="btn" data-act="open" data-arg="scan:${b.id}">${ico("qr", 16)} I've arrived: scan QR</button><div class="small" style="text-align:center">Check-in opens 15 minutes before your slot.</div>`);
+  if (shared) acts.push(`<div class="btns">${isDriver ? `<button class="btn sec" data-act="toast" data-arg="Opens maps with directions">${ico("nav", 16)} Directions</button>` : ""}<button class="btn sec" data-act="toast" data-arg="Calls ${esc(other.phone)}">${ico("phone", 16)} Call ${isDriver ? "host" : "driver"}</button></div>`);
+  if (b.status === "active") acts.push(`<div class="card"><div class="t-title">Charging in progress</div>
+      ${b.mode === "kwh" ? `<div class="field"><label class="lbl" for="kwhIn">Units used (kWh)</label><input id="kwhIn" inputmode="decimal" placeholder="e.g. 9.6" value="9.6"><span class="small">Read it from the charger or meter when you unplug.</span></div>` : `<div class="small">When you're done, unplug and finish the session.</div>`}
+      <button class="btn" data-act="finish" data-arg="${b.id}">${ico("check", 16)} Finish charging</button></div>`);
+  if (!isDriver && b.status === "requested") acts.push(`<div class="btns"><button class="btn" data-act="hostAccept" data-arg="${b.id}">${ico("check", 16)} Accept</button><button class="btn danger" data-act="hostDecline" data-arg="${b.id}">Decline</button></div>`);
+  if (["pending_payment", "requested", "confirmed"].includes(b.status) && !(!isDriver && b.status === "requested")) acts.push(`<button class="btn danger" data-act="cancelBk" data-arg="${b.id}">Cancel booking</button>`);
+  if (b.status === "completed" && !b.reviewed.includes(UI.who)) acts.push(`<button class="btn" data-act="open" data-arg="review:${b.id}">${ico("star", 16)} ${isDriver ? "Rate this charger" : "Rate this driver"}</button>`);
+  acts.push(`<button class="btn plain" data-act="open" data-arg="report:Booking #${b.id}">${ico("alert", 16)} Report a problem</button>`);
+  return { title: `Booking #${b.id}`, html: `
+    <div class="card"><div class="row between" style="align-items:flex-start"><div class="t-title">${esc(c.title)}</div>${badge(STATUS[b.status])}</div><div class="hr"></div>
+      <div class="info">${ico("cal", 16)}<span>${slot(b)} (${durLbl(b.mins)})</span></div>
+      <div class="info">${ico("pin", 16)}<span>${esc(c.address)}</span></div>
+      <div class="info">${ico("bolt", 16)}<span>${esc(c.connector)} · ${c.kw} kW · ${c.mode === "kwh" ? `${rs(b.unit)}/kWh` : `${rs(b.unit)}/hr`}</span></div>
+      <div class="info">${ico("user", 16)}<span>${isDriver ? "Host" : "Driver"}: ${esc(other.name)}${shared ? ` · <span class="mono">${esc(other.phone)}</span>` : ""}</span></div>
+      ${!isDriver ? `<div class="info">${ico("car", 16)}<span>${VEH[b.vehicle] || ""}${b.note ? " · " + esc(b.note) : ""}</span></div>` : ""}</div>
+    ${shared ? `<div class="notice n-green">${ico("key", 16)}<span><b>How to reach the charger:</b> ${esc(c.access)}</span></div>` : ""}
+    ${!shared && isDriver && ["requested", "pending_payment"].includes(b.status) ? `<div class="small">Address details and the host's phone number appear once the booking is confirmed.</div>` : ""}
+    <div class="card"><div class="lbl">Payment</div>
+      <div class="row between"><span>${b.status === "completed" ? "Final amount" : "Paid upfront"}</span><span class="num">${b.status === "pending_payment" ? "Not paid" : rs(b.final ?? b.amount, 2)}</span></div>
+      ${b.kwh != null ? `<div class="small">${b.kwh} kWh used × ${rs(b.unit)}</div>` : ""}
+      ${b.refund ? `<div class="row between"><span>Refunded to you${isDriver ? "" : " (driver)"}</span><span class="num">${rs(b.refund, 2)}</span></div>` : ""}
+      ${!isDriver && b.earn ? `<div class="row between"><b>You earn</b><b class="num">${rs(b.earn, 2)}</b></div><div class="small">After 10% service fee (${rs(b.fee, 2)})</div>` : ""}
+      ${b.reason ? `<div class="small">Note: ${esc(b.reason)}</div>` : ""}</div>
+    ${acts.join("")}` };
+}
+
+function scrScan(id) {
+  const b = booking(id); const c = charger(b.charger);
+  return { title: "Scan charger QR", flush: true, html: `
+    <div class="cam"><div class="frame"><div class="scanline"></div></div><div class="hint">Point the camera at the QR sticker next to the charger</div></div>
+    <div class="list-pad">
+      <button class="btn" data-act="scanOk" data-arg="${b.id}">${ico("camera", 16)} Simulate scanning the QR</button>
+      <div class="field"><label class="lbl" for="qrIn">Can't scan? Type the code under the QR</label><input id="qrIn" class="mono" placeholder="e.g. ${esc(c.qr)}"></div>
+      <button class="btn sec" data-act="scanCode" data-arg="${b.id}">Check in with code</button>
+      <div class="small">Hint for the demo: this charger's code is <span class="mono">${esc(c.qr)}</span>.</div>
+    </div>` };
+}
+
+function scrReview(id) {
+  const b = booking(id); const isDriver = b.driver === UI.who;
+  const st = UI.reviewStars || 0;
+  return { title: "Rate your session", html: `
+    <div style="text-align:center">How was ${isDriver ? "the charger" : "the driver"}?</div>
+    <div class="row" style="justify-content:center;gap:10px;color:#E9A800">${[1, 2, 3, 4, 5].map((n) => `<button data-act="stars" data-arg="${n}" style="border:0;background:none;color:inherit" aria-label="${n} stars"><svg width="36" height="36" viewBox="0 0 24 24" fill="${n <= st ? "currentColor" : "none"}" stroke="currentColor" stroke-width="1.8">${P.star}</svg></button>`).join("")}</div>
+    <div class="field"><label class="lbl" for="rvText">Comment (optional)</label><textarea id="rvText" placeholder="Easy to find? Charger worked well?"></textarea></div>
+    <button class="btn" data-act="submitReview" data-arg="${b.id}" ${st ? "" : "disabled"}>Submit</button>` };
+}
+
+function scrReport(about) {
+  return { title: "Report a problem", html: `
+    <div class="small">About: ${esc(about || "General")}</div>
+    <div class="field"><label class="lbl" for="rpCat">What went wrong?</label><select id="rpCat">${["Charger not working", "Payment / refund", "Safety", "Host / driver behaviour", "Other"].map((x) => `<option>${x}</option>`).join("")}</select></div>
+    <div class="field"><label class="lbl" for="rpMsg">Details</label><textarea id="rpMsg" placeholder="Tell us what happened"></textarea></div>
+    <div class="notice n-red">${ico("alert", 16)}<span>If anyone is in danger, call 112 first.</span></div>
+    <button class="btn" data-act="submitReport" data-arg="${esc(about || "General")}">Send report</button>` };
+}
+
+function bookingRow(b, host) {
+  const c = charger(b.charger);
+  return `<button class="card tap" data-act="open" data-arg="booking:${b.id}">
+    <div class="row between" style="align-items:flex-start"><div class="t-title" style="min-width:0">${esc(c.title)}</div>${badge(STATUS[b.status])}</div>
+    <div class="small">${slot(b)}</div>
+    <div class="row between"><span class="small">${host ? "Driver: " + esc(D.users[b.driver].name) : esc(c.address)}</span>
+    <b class="num">${host && b.earn ? "+" + rs(b.earn) : rs(b.final ?? b.amount)}</b></div></button>`;
+}
+
+function scrBookings() {
+  const mine = D.bookings.filter((b) => b.driver === UI.who);
+  const up = mine.filter(blocking).sort((a, b) => a.start - b.start);
+  const past = mine.filter((b) => !blocking(b)).sort((a, b) => b.start - a.start);
+  const list = UI.scope === "upcoming" ? up : past;
+  return { title: "My bookings", html: `
+    <div class="chips"><button class="chip ${UI.scope === "upcoming" ? "on" : ""}" data-act="scope" data-arg="upcoming">Upcoming (${up.length})</button><button class="chip ${UI.scope === "past" ? "on" : ""}" data-act="scope" data-arg="past">Past (${past.length})</button></div>
+    ${list.length ? list.map((b) => bookingRow(b, false)).join("") : `<div class="empty">${ico("cal", 40, 1.6)}<h3>No ${UI.scope} bookings</h3><span>Find a charger near you and book a slot.</span><button class="btn sm" data-act="tab" data-arg="find">Find a charger</button></div>`}` };
+}
+
+function scrHost() {
+  const u = me();
+  if (u.host === "none" || u.host === "rejected") {
+    return { title: "Host", html: `
+      <div class="empty">${ico("home", 44, 1.5)}<h3>Earn from your charger</h3><span>List your home or society charger. Set your own price and hours. Get paid weekly to your UPI.</span></div>
+      ${u.host === "rejected" ? `<div class="notice n-red">${ico("alert", 16)}<span>Your last application wasn't approved: ${esc(u.note || "please re-upload a clear ID.")}</span></div>` : ""}
+      <div class="card"><div class="lbl">How it works</div>
+        <div class="small">1. Verify your ID and add your UPI ID</div><div class="small">2. Add your charger with photos, price and hours</div>
+        <div class="small">3. ChargeShare reviews it (usually within a day)</div><div class="small">4. Accept bookings. Drivers scan your QR. You earn.</div></div>
+      <button class="btn" data-act="open" data-arg="apply">${u.host === "rejected" ? "Apply again" : "Become a host"}</button>` };
+  }
+  const mineC = D.chargers.filter((c) => c.host === u.id);
+  const hb = D.bookings.filter((b) => b.host === u.id && b.status !== "pending_payment");
+  const req = hb.filter((b) => b.status === "requested");
+  const up = hb.filter((b) => ["confirmed", "active"].includes(b.status)).sort((a, b) => a.start - b.start);
+  const e = earnings(u.id);
+  return { title: "Host", html: `
+    ${u.host === "pending" ? `<div class="notice n-amber">${ico("clock", 16)}<span>Your verification is in review. You can add chargers now; they go live once approved.</span></div>` : ""}
+    <button class="card tap" data-act="open" data-arg="earnings"><div class="row between"><div><div class="small">This month</div><div class="t-big num">${rs(e.month)}</div></div>
+      <div style="text-align:right"><div class="small">Next payout</div><div class="t-title price num" style="font-size:18px">${rs(e.pending)}</div></div></div>
+      <div class="small">${e.sessions} sessions completed · See earnings ›</div></button>
+    ${req.length ? `<div class="sec-h">Requests waiting for you (${req.length})</div>${req.map((b) => bookingRow(b, true)).join("")}` : ""}
+    <div class="sec-h">Upcoming</div>${up.length ? up.map((b) => bookingRow(b, true)).join("") : `<div class="small">No upcoming bookings.</div>`}
+    <div class="row between" style="margin-top:6px"><div class="sec-h">My chargers</div><button class="btn sec sm" data-act="open" data-arg="chargerForm">${ico("plus", 14)} Add</button></div>
+    ${mineC.length ? mineC.map((c) => `<button class="card tap" data-act="open" data-arg="manage:${c.id}"><div class="row" style="align-items:flex-start"><div class="thumb">${ico("plug", 26, 1.6)}</div>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px"><div class="row between" style="align-items:flex-start"><span class="t-title">${esc(c.title)}</span>${badge(CSTATUS[c.status])}</div>
+      <span class="small">${priceLbl(c)} · ${c.kw} kW · ${esc(c.connector)}</span>${c.status === "rejected" && c.note ? `<span class="small" style="color:var(--red)">${esc(c.note)}</span>` : ""}</div></div></button>`).join("") : `<div class="small">You haven't added a charger yet.</div>`}` };
+}
+
+function earnings(uid) {
+  const rows = D.bookings.filter((b) => b.host === uid && b.earn > 0);
+  const now = new Date();
+  const paid = D.payouts.filter((p) => p.host === uid && p.status === "paid").reduce((a, p) => a + p.amount, 0);
+  const pending = rows.filter((b) => !b.payout || D.payouts.find((p) => p.id === b.payout).status !== "paid").reduce((a, b) => a + b.earn, 0);
+  return { total: rows.reduce((a, b) => a + b.earn, 0), month: rows.filter((b) => b.start.getMonth() === now.getMonth() && b.start.getFullYear() === now.getFullYear()).reduce((a, b) => a + b.earn, 0), pending, paid, sessions: rows.filter((b) => b.status === "completed").length, rows };
+}
+
+function scrEarnings() {
+  const e = earnings(UI.who); const u = me();
+  const pays = D.payouts.filter((p) => p.host === UI.who);
+  return { title: "Earnings", html: `
+    <div class="card"><div class="row between"><span>Total earned</span><span class="t-title num">${rs(e.total)}</span></div><div class="hr"></div>
+      <div class="row between"><span class="small">This month</span><span class="num">${rs(e.month)}</span></div>
+      <div class="row between"><span class="small">Waiting to be paid</span><span class="num">${rs(e.pending)}</span></div>
+      <div class="row between"><span class="small">Already paid to you</span><span class="num">${rs(e.paid)}</span></div>
+      <div class="row between"><span class="small">Sessions completed</span><span class="num">${e.sessions}</span></div></div>
+    <div class="notice n-blue">${ico("wallet", 16)}<span>Payouts go every week to <b class="mono">${esc(u.upi || "your UPI ID")}</b>. Amounts are after the 10% service fee.</span></div>
+    <div class="sec-h">Payouts</div>
+    ${pays.length ? pays.map((p) => `<div class="card"><div class="row between"><span class="t-title num">${rs(p.amount)}</span>${badge(p.status === "paid" ? ["Paid", "b-green"] : ["Processing", "b-amber"])}</div><div class="small">${p.count} sessions${p.ref ? ` · Ref <span class="mono">${esc(p.ref)}</span>` : ""}</div></div>`).join("") : `<div class="small">No payouts yet. The admin creates them every week.</div>`}
+    <div class="sec-h">Sessions</div>${e.rows.length ? e.rows.map((b) => bookingRow(b, true)).join("") : `<div class="small">No completed sessions yet.</div>`}` };
+}
+
+function scrApply() {
+  const u = me(); const n = UI.applyDocs || 0;
+  return { title: "Become a host", html: `
+    <div class="sec-h">1. ID proof</div>
+    <div class="small">A photo of your Aadhaar, PAN, driving licence or voter ID. Only the verification team can see it.</div>
+    <div class="row wrap-r">${Array.from({ length: n }, (_, i) => `<div class="thumb" style="width:90px">${ico("doc", 24, 1.6)}<span class="small" style="position:absolute;opacity:0">${i}</span></div>`).join("")}</div>
+    <div class="btns"><button class="btn sec" data-act="addDoc">${ico("camera", 16)} Take photo</button><button class="btn sec" data-act="addDoc">From gallery</button></div>
+    ${n ? `<div class="notice n-green">${ico("check", 16)}<span>${n} document${n > 1 ? "s" : ""} uploaded (private).</span></div>` : ""}
+    <div class="sec-h">2. Where should we send your earnings?</div>
+    <div class="field"><label class="lbl" for="apUpi">UPI ID</label><input id="apUpi" value="${esc(u.upi || (u.name.split(" ")[0].toLowerCase() + "@okhdfcbank"))}" autocomplete="off"><span class="small">Payouts are sent weekly to this UPI ID.</span></div>
+    <div class="small">By applying you confirm the charger was installed safely by an electrician (earthing and an RCCB/trip switch) and that your housing society allows others to use it.</div>
+    <button class="btn" data-act="submitApply" ${n ? "" : "disabled"}>Submit application</button>` };
+}
+
+function scrChargerForm(id) {
+  const c = id ? charger(id) : null;
+  const v = c || { title: "", address: "", desc: "", access: "", vehicles: ["2W"], connector: "15A socket", kw: 3.3, mode: "hour", price: 3000, open: "07:00", close: "22:00", instant: false, society: false, societyName: "", noc: false, x: 0.3, y: 0.62 };
+  UI.form = UI.form && UI.form.forId === (id || 0) ? UI.form : { forId: id || 0, vehicles: [...v.vehicles], connector: v.connector, mode: v.mode, allDay: v.open === v.close, x: v.x, y: v.y };
+  const F = UI.form;
+  const sample = !c && D.users[UI.who].id === "anita";
+  return { title: c ? "Edit charger" : "Add your charger", html: `
+    <div class="sec-h">Photos</div>
+    <div class="row wrap-r"><div class="thumb" style="width:90px">${ico("plug", 24, 1.6)}</div><div class="thumb" style="width:90px">${ico("pin", 24, 1.6)}</div>
+      <button class="thumb" style="width:90px;border:1px dashed var(--muted);background:none" data-act="toast" data-arg="Opens the photo gallery">${ico("plus", 22)}</button></div>
+    <div class="small">Add the charger, the parking spot and the entrance.</div>
+    <div class="field"><label class="lbl" for="cfTitle">Listing title</label><input id="cfTitle" value="${esc(c ? v.title : sample ? "Miyapur Home Socket" : "")}" placeholder="e.g. Villa charger near Gachibowli flyover"></div>
+    <div class="field"><label class="lbl" for="cfDesc">Description</label><textarea id="cfDesc" placeholder="Covered parking, CCTV…">${esc(c ? v.desc : sample ? "Ground floor parking, socket on a dedicated circuit." : "")}</textarea></div>
+    <div class="sec-h">Location</div>
+    <div class="mapbox" style="height:170px;border-radius:12px;cursor:crosshair" data-act="placePin">${mapSvg()}<span class="pin sel" style="left:${F.x * 100}%;top:${F.y * 100}%;pointer-events:none">${ico("pin", 12, 3)} Here</span></div>
+    <button class="btn sec" data-act="toast" data-arg="Uses GPS to drop the pin on your location">${ico("locate", 16)} Use my location</button>
+    <div class="small">Tap the map to move the pin to the exact parking spot.</div>
+    <div class="field"><label class="lbl" for="cfAddr">Address</label><input id="cfAddr" value="${esc(c ? v.address : sample ? "Flat 102, Sai Residency, Miyapur, Hyderabad" : "")}" placeholder="Flat/house, street, area, city"></div>
+    <div class="field"><label class="lbl" for="cfAccess">Access instructions (shown only after a booking is confirmed)</label><textarea id="cfAccess" placeholder="Gate number, parking slot, who to call…">${esc(c ? v.access : sample ? "Ground floor, slot 6. Call me from the gate." : "")}</textarea></div>
+    <div class="sec-h">Charger</div>
+    <div class="lbl">Vehicles it can charge</div>
+    <div class="chips">${Object.entries(VEH).map(([k, l]) => `<button class="chip ${F.vehicles.includes(k) ? "on" : ""}" data-act="cfVeh" data-arg="${k}">${l}</button>`).join("")}</div>
+    <div class="lbl">Charger type (connector)</div>
+    <div class="chips">${CONNECTORS.map((x) => `<button class="chip ${F.connector === x ? "on" : ""}" data-act="cfConn" data-arg="${esc(x)}">${esc(x)}</button>`).join("")}</div>
+    <div class="field"><label class="lbl" for="cfKw">Power (kW)</label><input id="cfKw" inputmode="decimal" value="${v.kw}"><span class="small">Written on the charger. A normal 15A plug is about 3.3 kW.</span></div>
+    <div class="sec-h">Charging price</div>
+    <div class="chips"><button class="chip ${F.mode === "kwh" ? "on" : ""}" data-act="cfMode" data-arg="kwh">Per unit (kWh)</button><button class="chip ${F.mode === "hour" ? "on" : ""}" data-act="cfMode" data-arg="hour">Per hour</button></div>
+    <div class="field"><label class="lbl" for="cfPrice">Price in ₹ per ${F.mode === "kwh" ? "kWh" : "hour"}</label><input id="cfPrice" inputmode="decimal" value="${v.price / 100}">
+      <span class="small">${F.mode === "kwh" ? "Typical home tariff is ₹6–9 per unit. Most hosts charge ₹14–20 per kWh." : "Scooters typically ₹20–40/hr, cars ₹80–150/hr."}</span></div>
+    <div class="small">ChargeShare keeps a 10% service fee from each booking.</div>
+    <div class="sec-h">Hours</div>
+    <label class="check"><input type="checkbox" id="cfAll" ${F.allDay ? "checked" : ""} data-act="cfAll"> <span>Available 24 hours</span></label>
+    ${F.allDay ? "" : `<div class="btns"><div class="field"><label class="lbl" for="cfOpen">Opens</label><input id="cfOpen" type="time" value="${v.open === v.close ? "07:00" : v.open}"></div><div class="field"><label class="lbl" for="cfClose">Closes</label><input id="cfClose" type="time" value="${v.open === v.close ? "22:00" : v.close}"></div></div>`}
+    <div class="sec-h">Booking rules</div>
+    <label class="check"><input type="checkbox" id="cfInstant" ${v.instant ? "checked" : ""}> <span>Instant booking<br><span class="small">Bookings are confirmed without your approval.</span></span></label>
+    <label class="check"><input type="checkbox" id="cfSociety" ${v.society ? "checked" : ""}> <span>Only residents of my society<br><span class="small">You approve each driver before they come in.</span></span></label>
+    <label class="check"><input type="checkbox" id="cfNoc" ${v.noc || sample ? "checked" : ""}> <span>My housing society has approved sharing this charger</span></label>
+    <button class="btn" data-act="saveCharger" data-arg="${id || ""}">${c ? "Save changes" : "Submit for review"}</button>
+    ${c ? `<div class="small" style="text-align:center">Changing location, title or charger details sends the listing for a quick re-review.</div>` : ""}` };
+}
+
+function scrManage(id) {
+  const c = charger(id); const r = rating(c);
+  return { title: "Manage charger", html: `
+    <div class="card"><div class="row between" style="align-items:flex-start"><div class="t-title">${esc(c.title)}</div>${badge(CSTATUS[c.status])}</div>
+      <div class="small">${priceLbl(c)} · ${c.kw} kW · ${esc(c.connector)} · ${hoursLbl(c)}</div>
+      ${r ? `<span class="stars">${ico("star", 13)} ${r.toFixed(1)} <span class="small">(${c.reviews.length})</span></span>` : ""}</div>
+    ${c.note ? `<div class="notice ${c.status === "rejected" ? "n-red" : "n-blue"}">${ico("info", 16)}<span>From the ChargeShare team: ${esc(c.note)}</span></div>` : ""}
+    <div class="card" style="align-items:center;text-align:center"><div class="t-title">Charger QR code</div>
+      <div class="small">Print it and stick it next to the charger. Drivers scan it to start charging.</div>
+      <div class="qrbox" id="qrTarget" data-qr="chargeshare:qr:${esc(c.qr)}"></div>
+      <div class="mono" style="font-size:16px;letter-spacing:2px">${esc(c.qr)}</div><div class="small">Code for manual entry</div>
+      <button class="btn plain" data-act="newQr" data-arg="${c.id}">Generate new QR</button></div>
+    ${c.status === "approved" ? `<button class="btn sec" data-act="pause" data-arg="${c.id}">Pause bookings</button>` : ""}
+    ${c.status === "paused" ? `<button class="btn" data-act="pause" data-arg="${c.id}">Resume bookings</button>` : ""}
+    <button class="btn sec" data-act="open" data-arg="chargerForm:${c.id}">${ico("edit", 16)} Edit details</button>
+    <button class="btn plain" data-act="open" data-arg="charger:${c.id}">See public listing</button>
+    <button class="btn danger" data-act="removeCharger" data-arg="${c.id}">Remove charger</button>` };
+}
+
+function scrProfile() {
+  const u = me();
+  const item = (icon, label, act, arg = "", danger = false) => `<button class="row" data-act="${act}" data-arg="${esc(arg)}" style="border:0;background:none;padding:10px 0;width:100%;text-align:left;color:${danger ? "var(--red)" : "var(--ink)"}"><span style="color:${danger ? "var(--red)" : "var(--muted)"}">${ico(icon, 20)}</span><span style="flex:1;font-size:15px">${label}</span><span class="small">›</span></button>`;
+  return { title: "Profile", html: `
+    <div class="card"><div class="t-title" style="font-size:18px">${esc(u.name)}</div><div class="small mono">${esc(u.phone)}</div>
+      <div class="row wrap-r">${badge(HSTATUS[u.host])}${u.vehicle ? badge([VEH[u.vehicle], "b-blue"]) : ""}</div></div>
+    <div class="card" style="gap:0">${item("edit", "Edit profile", "editProfile")}<div class="hr"></div>${item("wallet", "Earnings and payouts", "open", "earnings")}<div class="hr"></div>${item("alert", "Report a problem", "open", "report:General")}</div>
+    <div class="card" style="gap:0">${item("doc", "Terms of use", "legal", "terms")}<div class="hr"></div>${item("shield", "Privacy policy", "legal", "privacy")}</div>
+    <div class="card" style="gap:0">${item("out", "Log out", "logout")}<div class="hr"></div>${item("trash", "Delete my account", "deleteAcct", "", true)}</div>
+    <div class="small" style="text-align:center">ChargeShare v1.0.0</div>` };
+}
+
+function screenFor(scr) {
+  if (!UI.loggedIn[UI.who]) return scrLogin();
+  switch (scr.s) {
+    case "tab": return { ...({ find: scrFind, bookings: scrBookings, host: scrHost, profile: scrProfile }[scr.tab])(), isTab: true };
+    case "charger": return scrCharger(scr.id);
+    case "book": return scrBook(scr.id);
+    case "pay": return scrPay(scr.id);
+    case "booking": return scrBooking(scr.id);
+    case "scan": return scrScan(scr.id);
+    case "review": return scrReview(scr.id);
+    case "report": return scrReport(scr.id);
+    case "apply": return scrApply();
+    case "chargerForm": return scrChargerForm(scr.id);
+    case "manage": return scrManage(scr.id);
+    case "earnings": return scrEarnings();
+  }
+  return { title: "?", html: "" };
+}
+
+function renderPhone() {
+  const scr = cur(); const v = screenFor(scr);
+  const tabNow = scr.s === "tab" ? scr.tab : null;
+  const u = me();
+  const reqCount = D.bookings.filter((b) => b.host === u.id && b.status === "requested").length;
+  const upCount = D.bookings.filter((b) => b.driver === u.id && ["requested", "confirmed", "active"].includes(b.status)).length;
+  const tabs = [["find", "map", "Find", 0], ["bookings", "cal", "Bookings", upCount], ["host", "home", "Host", reqCount], ["profile", "user", "Profile", 0]];
+  const showTitle = v.title && !(scr.s === "tab" && scr.tab === "find");
+  return `<div class="phone" aria-label="ChargeShare mobile app"><div class="screen">
+    <div class="status"><span class="num">${nowClock()}</span><span class="notch"></span><span>5G ▮▮▮</span></div>
+    ${UI.push ? `<button class="push" data-act="pushTap" style="text-align:left;border:1px solid var(--line)"><span class="app-ico">${ico("bolt", 16, 2.4)}</span><span><b>${esc(UI.push.title)}</b><span>${esc(UI.push.body)}</span></span></button>` : ""}
+    ${showTitle ? `<div class="appbar">${UI.nav.length > 1 && !v.isTab ? `<button class="back" data-act="back" aria-label="Back">${ico("back", 18)}</button>` : ""}<h2>${esc(v.title)}</h2></div>` : ""}
+    <div class="body ${v.flush ? "flush" : ""}">${v.html}</div>
+    ${v.noTabs ? "" : `<nav class="tabbar">${tabs.map(([t, i, l, n]) => `<button class="${tabNow === t ? "on" : ""}" data-act="tab" data-arg="${t}">${ico(i, 22)}${l}${n ? `<span class="dot">${n}</span>` : ""}</button>`).join("")}</nav>`}
+  </div></div>`;
+}
+
+// ======================================================================
+//  GUIDE PANEL (next to the phone)
+// ======================================================================
+const STORY = [
+  { who: "priya", nav: [{ s: "tab", tab: "find" }], t: "Driver finds a charger", d: "Priya filters for cars and opens a charger on the map.", done: () => UI.seenCharger },
+  { who: "priya", nav: [{ s: "tab", tab: "find" }], t: "Driver books a slot and pays", d: "Pick a day, time and duration, then pay by UPI.", done: () => D.bookings.some((b) => b.driver === "priya" && b.id >= 1005 && b.status !== "pending_payment") },
+  { who: "ravi", nav: [{ s: "tab", tab: "host" }], t: "Host accepts the request", d: "Ravi gets a push notification and taps Accept.", done: () => D.bookings.some((b) => b.driver === "priya" && b.id >= 1005 && ["confirmed", "active", "completed"].includes(b.status)) },
+  { who: "priya", nav: [{ s: "tab", tab: "bookings" }], t: "Driver scans the QR and charges", d: "At the charger, Priya scans the QR sticker to start.", done: () => D.bookings.some((b) => b.driver === "priya" && b.id >= 1005 && ["active", "completed"].includes(b.status)) },
+  { who: "priya", nav: [{ s: "tab", tab: "bookings" }], t: "Driver finishes and rates", d: "Enter the units used. Unused money is refunded.", done: () => D.bookings.some((b) => b.driver === "priya" && b.id >= 1005 && b.status === "completed") },
+  { who: "anita", nav: [{ s: "tab", tab: "host" }], t: "A new host signs up", d: "Anita uploads her ID, adds a UPI ID and lists her charger.", done: () => D.chargers.some((c) => c.host === "anita") },
+  { view: "admin", tab: "hosts", t: "Admin approves host and charger", d: "Check the ID and photos, then approve or reject.", done: () => D.users.anita.host === "approved" && D.chargers.some((c) => c.host === "anita" && c.status === "approved") },
+  { view: "admin", tab: "payouts", t: "Admin sends weekly payouts", d: "Create payouts, pay each host by UPI, mark paid.", done: () => D.payouts.some((p) => p.status === "paid") },
+];
+
+const SCREENS = [
+  ["Driver", [["Login with OTP", () => { UI.loggedIn[UI.who] = false; }], ["Find chargers: map", () => { UI.listMode = "map"; UI.nav = [{ s: "tab", tab: "find" }]; }], ["Find chargers: list", () => { UI.listMode = "list"; UI.nav = [{ s: "tab", tab: "find" }]; }], ["Charger details", () => (UI.nav = [{ s: "tab", tab: "find" }, { s: "charger", id: 1 }])], ["Book a slot", () => (UI.nav = [{ s: "tab", tab: "find" }, { s: "charger", id: 1 }, { s: "book", id: 1 }])], ["My bookings", () => (UI.nav = [{ s: "tab", tab: "bookings" }])], ["Booking details", () => (UI.nav = [{ s: "tab", tab: "bookings" }, { s: "booking", id: 1002 }])], ["Rate a session", () => (UI.nav = [{ s: "tab", tab: "bookings" }, { s: "review", id: 1002 }])]], "priya"],
+  ["Host", [["Host dashboard", () => (UI.nav = [{ s: "tab", tab: "host" }])], ["Booking request (accept / decline)", () => (UI.nav = [{ s: "tab", tab: "host" }, { s: "booking", id: 1001 }])], ["Add a charger", () => (UI.nav = [{ s: "tab", tab: "host" }, { s: "chargerForm" }])], ["Manage charger + QR code", () => (UI.nav = [{ s: "tab", tab: "host" }, { s: "manage", id: 1 }])], ["Earnings and payouts", () => (UI.nav = [{ s: "tab", tab: "host" }, { s: "earnings" }])]], "ravi"],
+  ["Account", [["Become a host (ID + UPI)", () => (UI.nav = [{ s: "tab", tab: "host" }, { s: "apply" }])], ["Profile", () => (UI.nav = [{ s: "tab", tab: "profile" }])], ["Report a problem", () => (UI.nav = [{ s: "tab", tab: "profile" }, { s: "report", id: "General" }])]], "anita"],
+];
+
+function renderGuide() {
+  const firstOpen = STORY.findIndex((s) => !s.done());
+  return `<div class="guide">
+    <div class="intro"><div class="eyebrow">Clickable prototype · sample data</div><h1>Book a neighbour's EV charger, or earn from yours</h1>
+      <p>Everything here works on sample data from Hyderabad. Switch between people with <b>Logged in as</b>, or open the <b>Admin panel</b>. Follow the story below to see one charging session from start to payout.</p></div>
+    <div class="panel"><div class="row between"><h3>Demo story</h3><span class="small">${STORY.filter((s) => s.done()).length} of ${STORY.length} done</span></div>
+      <ol class="steps">${STORY.map((s, i) => `<li class="step ${s.done() ? "done" : ""} ${i === firstOpen ? "cur" : ""}"><span class="n">${s.done() ? ico("check", 14, 3) : i + 1}</span>
+        <span><b>${esc(s.t)}</b><span>${esc(s.d)} <i>(${s.view === "admin" ? "Admin panel" : D.users[s.who].name.split(" ")[0]})</i></span></span>
+        <button class="btn sec sm" data-act="story" data-arg="${i}">Go</button></li>`).join("")}</ol></div>
+    <div class="panel"><h3>Screens in the app</h3><div class="screens">${SCREENS.map(([g, items], gi) => `<div><h4>${g}</h4>${items.map(([l], ii) => `<button data-act="jump" data-arg="${gi}:${ii}">${esc(l)}</button>`).join("")}</div>`).join("")}
+      <div><h4>Admin panel</h4>${[["dash", "Dashboard"], ["hosts", "Host verification"], ["chargers", "Charger approval"], ["bookings", "Bookings, refunds"], ["reports", "Problem reports"], ["payouts", "Payouts"]].map(([k, l]) => `<button data-act="adminJump" data-arg="${k}">${l}</button>`).join("")}</div></div></div>
+    <div class="panel"><h3>Rules the app enforces</h3><div class="rules">
+      <div class="rule"><b>Pricing</b>Per hour (fixed for the slot) or per kWh (driver prepays the maximum; unused units refunded).</div>
+      <div class="rule"><b>Service fee</b>ChargeShare keeps 10% of each booking. The host gets 90%, paid weekly by UPI.</div>
+      <div class="rule"><b>Cancellation</b>1 hour or more before: full refund. Later: 50%. Host declines: full refund.</div>
+      <div class="rule"><b>Privacy</b>Phone numbers and access instructions are shared only after a booking is confirmed.</div>
+      <div class="rule"><b>Trust</b>Hosts verify ID. Every charger is reviewed before it goes live. Drivers rate after each session.</div>
+      <div class="rule"><b>Safety</b>Society-only listings, NOC confirmation, safety-checked badge, and problem reports.</div></div></div>
+    <div class="panel"><h3>Activity and notifications</h3><div class="log">${D.log.length ? D.log.map((l) => `<div class="log-item"><time>${l.t}</time><div><span class="k">${esc(l.kind)}</span> · ${esc(l.text)}</div></div>`).join("") : `<div class="small">Push notifications and system events show up here as you click through.</div>`}</div></div>
+  </div>`;
+}
+
+// ======================================================================
+//  ADMIN PANEL
+// ======================================================================
+function adminCounts() {
+  return { hosts: Object.values(D.users).filter((u) => u.host === "pending").length, chargers: D.chargers.filter((c) => c.status === "pending").length, reports: D.reports.filter((r) => r.status === "open").length, payouts: D.payouts.filter((p) => p.status === "pending").length };
+}
+function renderAdmin() {
+  const n = adminCounts(); const t = UI.adminTab;
+  const tabs = [["dash", "Dashboard", 0], ["hosts", "Hosts", n.hosts], ["chargers", "Chargers", n.chargers], ["bookings", "Bookings", 0], ["reports", "Reports", n.reports], ["payouts", "Payouts", n.payouts]];
+  const body = { dash: aDash, hosts: aHosts, chargers: aChargers, bookings: aBookings, reports: aReports, payouts: aPayouts }[t]();
+  return `<div class="admin"><nav class="side" aria-label="Admin sections">${tabs.map(([k, l, c]) => `<button class="${t === k ? "on" : ""}" data-act="adminTab" data-arg="${k}"><span>${l}</span>${c ? `<span class="cnt">${c}</span>` : ""}</button>`).join("")}</nav><div style="min-width:0">${body}</div></div>`;
+}
+const head = (h, p, right = "") => `<div class="a-head"><div><h2>${h}</h2><p>${p}</p></div>${right}</div>`;
+const filterChips = (key, opts) => { const v = UI.adminFilter[key] ?? opts[0][0]; return `<div class="filter">${opts.map(([k, l]) => `<button class="chip ${v === k ? "on" : ""}" data-act="aFilter" data-arg="${key}:${k}">${l}</button>`).join("")}</div>`; };
+const fval = (key, def) => UI.adminFilter[key] ?? def;
+
+function aDash() {
+  const n = adminCounts(); const live = liveChargers().length;
+  const paid = D.bookings.filter((b) => b.final != null);
+  const gross = paid.reduce((a, b) => a + (b.final || 0), 0), fee = paid.reduce((a, b) => a + b.fee, 0);
+  const pend = D.payouts.filter((p) => p.status === "pending").reduce((a, p) => a + p.amount, 0);
+  const owed = D.bookings.filter((b) => b.earn > 0 && !b.payout).reduce((a, b) => a + b.earn, 0);
+  const tiles = [["Hosts waiting for approval", n.hosts, n.hosts > 0, "hosts"], ["Chargers waiting for approval", n.chargers, n.chargers > 0, "chargers"], ["Open problem reports", n.reports, n.reports > 0, "reports"],
+    ["Live chargers", live], ["Users", Object.values(D.users).filter((u) => !u.deleted).length], ["Open bookings", D.bookings.filter((b) => ["requested", "confirmed", "active"].includes(b.status)).length],
+    ["Completed sessions", D.bookings.filter((b) => b.status === "completed").length], ["Gross bookings", rs(gross)], ["Commission earned (10%)", rs(fee)], ["Host earnings not yet in a payout", rs(owed)], ["Payouts to send", rs(pend)]];
+  return head("Dashboard", "Today's work first, then the numbers.") + `<div class="tiles">${tiles.map(([k, v, attn, go]) => `<div class="tile ${attn ? "attn" : ""}" ${go ? `role="button" tabindex="0" data-act="adminTab" data-arg="${go}" style="cursor:pointer"` : ""}><div class="k">${k}</div><div class="v">${v}</div></div>`).join("")}</div>`;
+}
+
+function aHosts() {
+  const f = fval("hosts", "pending");
+  const users = Object.values(D.users).filter((u) => !u.deleted && (f === "all" || u.host === f));
+  return head("Host verification", "Check the ID proof and UPI ID before someone can earn on ChargeShare.", filterChips("hosts", [["pending", "Waiting"], ["approved", "Approved"], ["rejected", "Rejected"], ["none", "Drivers only"], ["all", "All"]])) +
+    (users.length ? `<div class="a-cards">${users.map((u) => `<div class="a-card"><div class="row between"><div class="t-title">${esc(u.name)}</div>${badge(HSTATUS[u.host])}</div>
+      <dl class="kv"><dt>Phone</dt><dd class="mono">${esc(u.phone)}</dd><dt>Payout UPI</dt><dd class="mono">${esc(u.upi || "—")}</dd><dt>Drives</dt><dd>${VEH[u.vehicle] || "—"}</dd><dt>Chargers</dt><dd>${D.chargers.filter((c) => c.host === u.id).length}</dd></dl>
+      ${u.docs ? `<div class="row">${Array.from({ length: u.docs }, (_, i) => `<div class="docimg" style="flex:1">${ico("doc", 16)} ID proof ${i + 1} (private)</div>`).join("")}</div>` : ""}
+      ${u.note ? `<div class="small">Reason sent: ${esc(u.note)}</div>` : ""}
+      ${u.host === "pending" || u.host === "rejected" || u.host === "approved" ? `<div class="acts">${u.host !== "approved" ? `<button class="btn sm" data-act="aApproveHost" data-arg="${u.id}">${ico("check", 14)} Approve</button>` : ""}${u.host !== "rejected" ? `<button class="btn danger sm" data-act="aRejectHost" data-arg="${u.id}">Reject</button>` : ""}</div>` : ""}</div>`).join("")}</div>`
+      : `<div class="empty"><h3>Nothing waiting</h3><span>New host applications appear here.</span></div>`);
+}
+
+function aChargers() {
+  const f = fval("chargers", "pending");
+  const list = D.chargers.filter((c) => f === "all" || c.status === f);
+  return head("Charger approval", "Review photos, location, connector and the society permission before a charger goes live.", filterChips("chargers", [["pending", "Waiting"], ["approved", "Live"], ["rejected", "Rejected"], ["paused", "Paused"], ["all", "All"]])) +
+    (list.length ? `<div class="a-cards">${list.map((c) => { const h = D.users[c.host]; return `<div class="a-card">
+      <div class="row">${Array.from({ length: Math.min(3, c.photos) }, () => `<div class="thumb" style="flex:1;height:70px">${ico("plug", 22, 1.6)}</div>`).join("")}</div>
+      <div class="row between" style="align-items:flex-start"><div class="t-title">${esc(c.title)}</div>${badge(CSTATUS[c.status])}</div>
+      <dl class="kv"><dt>Host</dt><dd>${esc(h.name)} ${badge(HSTATUS[h.host])}</dd><dt>Address</dt><dd>${esc(c.address)}</dd>
+        <dt>Charger type</dt><dd>${esc(c.connector)} · ${c.kw} kW</dd><dt>Vehicles</dt><dd>${c.vehicles.map((v) => VEH[v]).join(", ")}</dd>
+        <dt>Charging price</dt><dd>${priceLbl(c)} (${c.mode === "kwh" ? "per unit" : "per hour"})</dd><dt>Hours</dt><dd>${hoursLbl(c)}</dd>
+        <dt>Society NOC</dt><dd>${c.noc ? "Yes" : `<span style="color:var(--red)">Not confirmed</span>`}${c.society ? ` · residents of ${esc(c.societyName)}` : ""}</dd>
+        <dt>Safety checked</dt><dd>${c.safety ? "Yes" : "No"}</dd></dl>
+      ${c.note ? `<div class="small">Note: ${esc(c.note)}</div>` : ""}
+      <div class="acts">${c.status !== "approved" ? `<button class="btn sm" data-act="aApproveCharger" data-arg="${c.id}">${ico("check", 14)} Approve</button>` : ""}${c.status !== "rejected" ? `<button class="btn danger sm" data-act="aRejectCharger" data-arg="${c.id}">Reject</button>` : ""}</div></div>`; }).join("")}</div>`
+      : `<div class="empty"><h3>Nothing here</h3><span>New and edited listings appear under Waiting.</span></div>`);
+}
+
+function aBookings() {
+  const f = fval("bookings", "all");
+  const list = D.bookings.filter((b) => f === "all" || b.status === f).sort((a, b) => b.id - a.id);
+  return head("Bookings", "Every booking with money in and out. Cancel or refund when there's a dispute.", filterChips("bookings", [["all", "All"], ["requested", "Waiting for host"], ["confirmed", "Confirmed"], ["active", "Charging"], ["completed", "Completed"], ["cancelled", "Cancelled"]])) +
+    `<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Charger</th><th>Driver → Host</th><th>Slot</th><th>Status</th><th class="money">Paid</th><th class="money">Final</th><th class="money">Refunded</th><th class="money">Fee</th><th class="money">Host gets</th><th></th></tr></thead><tbody>
+    ${list.map((b) => `<tr><td class="mono">${b.id}</td><td>${esc(charger(b.charger).title)}<div class="small">${b.mode === "kwh" ? "per kWh" : "per hour"}${b.kwh != null ? ` · ${b.kwh} kWh` : ""}</div></td>
+      <td>${esc(D.users[b.driver].name.split(" ")[0])} → ${esc(D.users[b.host].name.split(" ")[0])}</td><td>${slot(b)}</td>
+      <td>${badge(STATUS[b.status])}${b.reason ? `<div class="small">${esc(b.by)}: ${esc(b.reason)}</div>` : ""}</td>
+      <td class="money">${b.status === "pending_payment" ? "—" : rs(b.amount)}</td><td class="money">${b.final != null ? rs(b.final) : "—"}</td><td class="money">${rs(b.refund)}</td><td class="money">${rs(b.fee)}</td><td class="money">${rs(b.earn)}</td>
+      <td><div class="acts">${["requested", "confirmed"].includes(b.status) ? `<button class="btn danger sm" data-act="aCancel" data-arg="${b.id}">Cancel</button>` : ""}${b.status !== "pending_payment" && b.amount - b.refund > 0 && !["requested"].includes(b.status) ? `<button class="btn sec sm" data-act="aRefund" data-arg="${b.id}">Refund</button>` : ""}</div></td></tr>`).join("")}
+    </tbody></table></div>`;
+}
+
+function aReports() {
+  const f = fval("reports", "open");
+  const list = D.reports.filter((r) => f === "all" || r.status === f);
+  return head("Problem reports", "Reply to the person who reported it. The reply goes to them as a notification.", filterChips("reports", [["open", "Open"], ["resolved", "Resolved"], ["all", "All"]])) +
+    (list.length ? `<div class="tbl-wrap"><table><thead><tr><th>When</th><th>From</th><th>About</th><th>Type</th><th>Message</th><th>Status</th><th></th></tr></thead><tbody>
+    ${list.map((r) => `<tr><td>${dayLbl(r.when)}, ${tm(r.when)}</td><td>${esc(D.users[r.from].name)}</td><td>${esc(r.about)}</td><td>${badge([r.cat, r.cat === "Safety" ? "b-red" : ""])}</td>
+      <td style="max-width:340px">${esc(r.msg)}${r.reply ? `<div class="small">Reply: ${esc(r.reply)}</div>` : ""}</td><td>${badge(r.status === "open" ? ["Open", "b-amber"] : ["Resolved", "b-green"])}</td>
+      <td>${r.status === "open" ? `<button class="btn sm" data-act="aResolve" data-arg="${r.id}">Reply and resolve</button>` : ""}</td></tr>`).join("")}</tbody></table></div>`
+      : `<div class="empty"><h3>No reports</h3><span>Reports sent from the app appear here.</span></div>`);
+}
+
+function aPayouts() {
+  const owed = D.bookings.filter((b) => b.earn > 0 && !b.payout);
+  const f = fval("payouts", "pending");
+  const list = D.payouts.filter((p) => f === "all" || p.status === f).sort((a, b) => b.id - a.id);
+  return head("Host payouts", "Once a week: group each host's earnings, send the money by UPI, then mark it paid with the transaction reference.",
+    `<button class="btn sm" data-act="aGenPayouts">Create this week's payouts${owed.length ? ` (${rs(owed.reduce((a, b) => a + b.earn, 0))})` : ""}</button>`) +
+    filterChips("payouts", [["pending", "To send"], ["paid", "Paid"], ["all", "All"]]) + `<div style="height:12px"></div>` +
+    (list.length ? `<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Host</th><th>UPI ID</th><th>Sessions</th><th class="money">Amount</th><th>Status</th><th></th></tr></thead><tbody>
+    ${list.map((p) => `<tr><td class="mono">${p.id}</td><td>${esc(D.users[p.host].name)}<div class="small mono">${esc(D.users[p.host].phone)}</div></td><td class="mono">${esc(p.upi || "missing")}</td><td>${p.count}</td>
+      <td class="money"><b>${rs(p.amount, 2)}</b></td><td>${badge(p.status === "paid" ? ["Paid", "b-green"] : ["To send", "b-amber"])}${p.ref ? `<div class="small mono">UTR ${esc(p.ref)}</div>` : ""}</td>
+      <td>${p.status === "pending" ? `<button class="btn sm" data-act="aMarkPaid" data-arg="${p.id}">Mark paid</button>` : ""}</td></tr>`).join("")}</tbody></table></div>`
+      : `<div class="empty"><h3>${f === "pending" ? "No payouts to send" : "No payouts yet"}</h3><span>${owed.length ? `${owed.length} sessions are waiting. Click "Create this week's payouts".` : "Completed sessions add to the next payout."}</span></div>`);
+}
+
+// ======================================================================
+//  RENDER
+// ======================================================================
+function render() {
+  document.getElementById("vApp").classList.toggle("on", UI.view === "app");
+  document.getElementById("vAdmin").classList.toggle("on", UI.view === "admin");
+  document.getElementById("whoWrap").hidden = UI.view !== "app";
+  const sel = document.getElementById("whoSel");
+  const roles = { priya: "driver", karthik: "driver", ravi: "host", anita: "new user", suresh: "host, in review" };
+  sel.innerHTML = Object.values(D.users).map((u) => `<option value="${u.id}" ${u.id === UI.who ? "selected" : ""}>${esc(u.name)} (${roles[u.id]})</option>`).join("");
+  const root = document.getElementById("root");
+  const keepScroll = document.querySelector(".screen .body")?.scrollTop || 0;
+  root.innerHTML = UI.view === "app" ? `<div class="mobile-view">${renderPhone()}${renderGuide()}</div>` : renderAdmin();
+  const bodyEl = document.querySelector(".screen .body"); if (bodyEl) bodyEl.scrollTop = keepScroll;
+  const q = document.getElementById("qrTarget");
+  if (q) { if (window.QRCode) { new QRCode(q, { text: q.dataset.qr, width: 180, height: 180, colorDark: "#111613", colorLight: "#ffffff" }); } else { q.innerHTML = `<div class="small" style="color:#333">QR code: ${esc(q.dataset.qr)}</div>`; } }
+}
+
+// ======================================================================
+//  ACTIONS
+// ======================================================================
+const val = (id) => (document.getElementById(id)?.value ?? "").trim();
+const A = {
+  view: (v) => { UI.view = v; render(); window.scrollTo(0, 0); },
+  reset: () => { D = seed(); Object.assign(UI, { who: "priya", nav: [{ s: "tab", tab: "find" }], vfilter: "", listMode: "map", selPin: null, book: null, scope: "upcoming", adminTab: "dash", adminFilter: {}, push: null, seenCharger: false, applyDocs: 0, form: null, reviewStars: 0 }); Object.keys(UI.loggedIn).forEach((k) => (UI.loggedIn[k] = true)); render(); toast("Demo reset to the starting sample data"); },
+  tab: (t) => tab(t),
+  back: () => back(),
+  toast: (m) => toast(m),
+  vfilter: (v) => { UI.vfilter = v; UI.selPin = null; render(); },
+  listMode: () => { UI.listMode = UI.listMode === "map" ? "list" : "map"; render(); },
+  pin: (id) => { UI.selPin = Number(id); render(); },
+  open: (arg) => {
+    const [s, ...rest] = arg.split(":"); const id = rest.join(":");
+    if (s === "charger") UI.seenCharger = true;
+    if (s === "review") UI.reviewStars = 0;
+    if (s === "chargerForm") UI.form = null;
+    if (s === "apply") UI.applyDocs = 0;
+    go({ s, id: id || undefined });
+  },
+  login: () => { UI.loggedIn[UI.who] = true; UI.nav = initialNav(UI.who); render(); },
+  logout: () => { UI.loggedIn[UI.who] = false; render(); },
+  startBook: (id) => { UI.book = null; go({ s: "book", id }); },
+  bkDay: (i) => { UI.book.day = Number(i); UI.book.start = null; render(); },
+  bkStart: (t) => { UI.book.start = Number(t); render(); },
+  bkDur: (m) => { UI.book.mins = Number(m); render(); },
+  bkVeh: (v) => { UI.book.vehicle = v; render(); },
+  confirmBook: () => {
+    const bk = UI.book; const c = charger(bk.c); const start = new Date(bk.start);
+    if (!fits(c, start, bk.mins)) { toast("That slot was just taken. Pick another time."); return render(); }
+    const b = { id: D.nextB++, charger: c.id, driver: UI.who, host: c.host, start, mins: bk.mins, status: "pending_payment", mode: c.mode, unit: c.price, amount: estimate(c, bk.mins), final: null, refund: 0, fee: 0, earn: 0, kwh: null, vehicle: bk.vehicle, note: bk.note, reason: "", by: "", payout: null, reviewed: [] };
+    D.bookings.push(b); log("Booking", `#${b.id} created, waiting for payment (${rs(b.amount)})`);
+    UI.nav = [{ s: "tab", tab: "bookings" }, { s: "booking", id: b.id }, { s: "pay", id: b.id }]; render();
+  },
+  pay: (id) => {
+    const btn = document.getElementById("payBtn"); if (btn) { btn.disabled = true; btn.textContent = "Processing…"; }
+    setTimeout(() => {
+      const b = booking(id); const c = charger(b.charger);
+      if (b.status !== "pending_payment") return;
+      b.status = c.instant ? "confirmed" : "requested";
+      log("Payment", `${rs(b.amount)} received for #${b.id} via Razorpay`);
+      if (c.instant) { notify(b.host, "New booking", `${c.title} was booked for ${slot(b)}.`, b.id); notify(b.driver, "Booking confirmed", `${c.title} is booked for you.`, b.id); }
+      else { notify(b.host, "New booking request", `${me().name.split(" ")[0]} wants to charge at ${c.title}. Accept it in the app.`, b.id); notify(b.driver, "Request sent", "Payment received. Waiting for the host to accept.", b.id); }
+      UI.nav = [{ s: "tab", tab: "bookings" }, { s: "booking", id: b.id }]; render();
+    }, 900);
+  },
+  hostAccept: (id) => { const b = booking(id); b.status = "confirmed"; log("Booking", `#${b.id} accepted by host`); notify(b.driver, "Booking confirmed", `${charger(b.charger).title} accepted your booking.`, b.id); render(); toast("Accepted. The driver can now see your address and phone."); },
+  hostDecline: (id) => modal({ title: "Decline this request?", text: "The driver gets a full refund.", fields: [{ id: "r", label: "Reason (optional)", value: "Not available at that time" }], ok: "Decline", danger: true,
+    onOk: (v) => { const b = booking(id); b.status = "declined"; b.by = "host"; b.reason = v.r; b.refund = b.amount; log("Refund", `${rs(b.amount)} refunded for #${b.id}`); notify(b.driver, "Booking declined", "The host couldn't take this booking. Full refund issued.", b.id); } }),
+  cancelBk: (id) => {
+    const b = booking(id); const isDriver = b.driver === UI.who; const mins = (b.start - Date.now()) / 60000;
+    const refund = b.status === "pending_payment" ? 0 : isDriver && b.status === "confirmed" && mins < 60 ? Math.floor(b.amount / 2) : b.amount;
+    const text = b.status === "pending_payment" ? "Nothing has been paid yet." : isDriver ? (refund === b.amount ? `You'll get a full refund of ${rs(refund, 2)}.` : `Your slot starts in under an hour, so you'll get a 50% refund (${rs(refund, 2)}).`) : "The driver gets a full refund.";
+    modal({ title: "Cancel booking?", text, ok: "Cancel booking", danger: true, onOk: () => {
+      const wasPaid = b.status !== "pending_payment";
+      b.status = "cancelled"; b.by = isDriver ? "driver" : "host"; b.refund = refund;
+      const kept = wasPaid ? b.amount - refund : 0; if (kept > 0) settle(b, kept);
+      log("Booking", `#${b.id} cancelled by ${b.by}${refund ? `, ${rs(refund)} refunded` : ""}`);
+      notify(isDriver ? b.host : b.driver, "Booking cancelled", `Booking #${b.id} at ${charger(b.charger).title} was cancelled.`, b.id);
+    } });
+  },
+  scanOk: (id) => checkIn(id, charger(booking(id).charger).qr),
+  scanCode: (id) => checkIn(id, val("qrIn").toUpperCase()),
+  finish: (id) => {
+    const b = booking(id);
+    if (b.mode === "kwh") {
+      const k = Number(val("kwhIn").replace(",", "."));
+      if (!k || k < 0) { toast("Enter the units used (kWh)"); return; }
+      const final = Math.min(b.amount, Math.ceil(k * b.unit)); b.kwh = k; b.refund = b.amount - final; settle(b, final);
+    } else settle(b, b.amount);
+    b.status = "completed"; UI.reviewStars = 0;
+    log("Session", `#${b.id} complete. Final ${rs(b.final, 2)}, refund ${rs(b.refund, 2)}, host earns ${rs(b.earn, 2)}`);
+    notify(b.host, "Session complete", `You earned ${rs(b.earn)}.`, b.id); notify(b.driver, "Charging complete", b.refund ? `${rs(b.refund)} for unused units is on its way back.` : "Thanks for charging! Rate your host.", b.id);
+    render();
+  },
+  stars: (n) => { UI.reviewStars = Number(n); render(); },
+  submitReview: (id) => {
+    const b = booking(id); const isDriver = b.driver === UI.who;
+    if (isDriver) charger(b.charger).reviews.unshift({ by: me().name.split(" ")[0], stars: UI.reviewStars, text: val("rvText") });
+    b.reviewed.push(UI.who); log("Review", `${me().name.split(" ")[0]} gave ${UI.reviewStars}★ for #${b.id}`); back(); toast("Thanks! Your rating helps the community.");
+  },
+  submitReport: (about) => {
+    const msg = val("rpMsg"); if (msg.length < 5) { toast("Tell us a bit more about what happened"); return; }
+    D.reports.unshift({ id: D.reports.length + 1, from: UI.who, about, cat: val("rpCat"), msg, status: "open", reply: "", when: new Date() });
+    log("Report", `New ${val("rpCat").toLowerCase()} report from ${me().name.split(" ")[0]}`); back(); toast("Report sent. The team will get back to you.");
+  },
+  addDoc: () => { UI.applyDocs = Math.min(3, (UI.applyDocs || 0) + 1); render(); },
+  submitApply: () => {
+    const upi = val("apUpi"); if (!/^[\w.\-]{2,}@[a-zA-Z]{2,}$/.test(upi)) { toast("Enter a valid UPI ID, like name@okaxis"); return; }
+    const u = me(); u.upi = upi; u.docs = UI.applyDocs; u.host = "pending"; u.note = "";
+    log("Host", `${u.name} applied to become a host`); toast("Application sent. Now add your charger.");
+    UI.form = null; UI.nav = [{ s: "tab", tab: "host" }, { s: "chargerForm" }]; render();
+  },
+  cfVeh: (k) => { const F = UI.form; F.vehicles = F.vehicles.includes(k) ? F.vehicles.filter((x) => x !== k) : [...F.vehicles, k]; render(); },
+  cfConn: (x) => { UI.form.connector = x; render(); },
+  cfMode: (m) => { UI.form.mode = m; render(); },
+  cfAll: () => { UI.form.allDay = document.getElementById("cfAll").checked; render(); },
+  saveCharger: (id) => {
+    const F = UI.form; const title = val("cfTitle"), address = val("cfAddr");
+    const kw = Number(val("cfKw")), price = Number(val("cfPrice"));
+    if (title.length < 3) return toast("Add a listing title");
+    if (address.length < 5) return toast("Add the address");
+    if (!F.vehicles.length) return toast("Pick at least one vehicle type");
+    if (!(kw > 0) || !(price > 0)) return toast("Enter the power (kW) and price");
+    const data = { title, address, desc: val("cfDesc"), access: val("cfAccess"), vehicles: F.vehicles, connector: F.connector, kw, mode: F.mode, price: Math.round(price * 100),
+      open: F.allDay ? "00:00" : val("cfOpen") || "07:00", close: F.allDay ? "00:00" : val("cfClose") || "22:00", instant: document.getElementById("cfInstant").checked,
+      society: document.getElementById("cfSociety").checked, noc: document.getElementById("cfNoc").checked, x: F.x, y: F.y };
+    if (data.society) data.instant = false;
+    if (id) { const c = charger(id); const reviewed = ["title", "address", "connector", "kw"].some((k) => c[k] !== data[k]) || c.x !== data.x; Object.assign(c, data); if (reviewed && c.status !== "pending") { c.status = "pending"; c.note = "Changes waiting for review"; } log("Charger", `${c.title} updated${reviewed ? ", sent for re-review" : ""}`); toast("Saved"); }
+    else { const c = { ...data, id: D.nextC++, host: UI.who, status: "pending", note: "", reviews: [], photos: 2, safety: false, qr: qrCode(), societyName: data.society ? "My society" : "" }; D.chargers.push(c); log("Charger", `${me().name.split(" ")[0]} submitted "${c.title}" for review`); toast("Submitted. You'll get a notification when it's live."); }
+    UI.form = null; UI.nav = [{ s: "tab", tab: "host" }]; render();
+  },
+  placePin: (_, ev) => { const box = ev.currentTarget.getBoundingClientRect(); UI.form.x = Math.min(0.95, Math.max(0.05, (ev.clientX - box.left) / box.width)); UI.form.y = Math.min(0.95, Math.max(0.1, (ev.clientY - box.top) / box.height)); render(); },
+  newQr: (id) => modal({ title: "Generate a new QR code?", text: "The old QR sticker stops working. Print and stick the new one.", ok: "Generate", onOk: () => { charger(id).qr = qrCode(); toast("New QR code ready"); } }),
+  pause: (id) => { const c = charger(id); c.status = c.status === "paused" ? "approved" : "paused"; log("Charger", `${c.title} ${c.status === "paused" ? "paused" : "resumed"}`); render(); },
+  removeCharger: (id) => {
+    const c = charger(id);
+    if (D.bookings.some((b) => b.charger === c.id && ["requested", "confirmed", "active"].includes(b.status))) return toast("This charger has upcoming bookings. Finish or cancel them first.");
+    modal({ title: "Remove this charger?", text: "It disappears from the map. You can't undo this.", ok: "Remove", danger: true, onOk: () => { D.chargers = D.chargers.filter((x) => x.id !== c.id); UI.nav = [{ s: "tab", tab: "host" }]; log("Charger", `${c.title} removed`); } });
+  },
+  editProfile: () => { const u = me(); modal({ title: "Edit profile", fields: [{ id: "n", label: "Full name", value: u.name }, { id: "v", label: "Vehicle (2W, 3W, 4W or blank)", value: u.vehicle }], ok: "Save", onOk: (v) => { if (v.n.length < 2) { toast("Enter your name"); return false; } u.name = v.n; u.vehicle = ["2W", "3W", "4W"].includes(v.v.toUpperCase()) ? v.v.toUpperCase() : ""; toast("Profile saved"); } }); },
+  legal: (k) => modal({ title: k === "terms" ? "Terms of use" : "Privacy policy", text: k === "terms" ? "ChargeShare connects hosts and drivers. Hosts confirm safe installation and society permission. Cancellation: full refund 1 hour or more before, 50% after. Platform fee 10%." : "We collect your phone number, name, location while the app is open, booking history and (for hosts) ID proof and UPI ID. Contact details are shared only for confirmed bookings. You can delete your account anytime.", ok: "Close", onOk: () => {} }),
+  deleteAcct: () => modal({ title: "Delete account?", text: "This cancels your open bookings with refunds, removes your chargers and erases your personal details. It can't be undone. (In this demo, Reset demo brings everything back.)", ok: "Delete", danger: true, onOk: () => {
+    const u = me(); D.bookings.filter((b) => (b.driver === u.id || b.host === u.id) && ["pending_payment", "requested", "confirmed"].includes(b.status)).forEach((b) => { b.status = "cancelled"; b.by = "system"; b.reason = "Account deleted"; b.refund = b.amount; });
+    D.chargers.filter((c) => c.host === u.id).forEach((c) => (c.status = "paused")); u.deleted = true; u.host = "none"; UI.loggedIn[u.id] = false; log("Account", `${u.name} deleted their account`); toast("Account deleted");
+  } }),
+  pushTap: () => { const id = UI.push?.bookingId; UI.push = null; if (id) { UI.nav = [{ s: "tab", tab: booking(id).host === UI.who ? "host" : "bookings" }, { s: "booking", id }]; } render(); },
+  scope: (s) => { UI.scope = s; render(); },
+  story: (i) => { const s = STORY[Number(i)]; if (s.view === "admin") { UI.view = "admin"; UI.adminTab = s.tab; if (s.tab === "hosts") UI.adminFilter.hosts = "pending"; } else { UI.view = "app"; UI.who = s.who; UI.loggedIn[s.who] = true; UI.nav = s.nav.map((x) => ({ ...x })); } render(); window.scrollTo({ top: 0, behavior: "smooth" }); },
+  jump: (arg) => { const [g, i] = arg.split(":").map(Number); const [, items, who] = SCREENS[g]; UI.view = "app"; UI.who = who; UI.loggedIn[who] = true; items[i][1](); render(); window.scrollTo({ top: 0, behavior: "smooth" }); },
+  adminJump: (t) => { UI.view = "admin"; UI.adminTab = t; render(); window.scrollTo(0, 0); },
+  adminTab: (t) => { UI.adminTab = t; render(); },
+  aFilter: (arg) => { const [k, v] = arg.split(":"); UI.adminFilter[k] = v; render(); },
+  aApproveHost: (id) => { const u = D.users[id]; u.host = "approved"; u.note = ""; log("Admin", `Approved host ${u.name}`); notify(id, "You're a host now!", "Your verification is approved. Your chargers go live once reviewed."); render(); toast(`${u.name} is now a verified host`); },
+  aRejectHost: (id) => modal({ title: `Reject ${D.users[id].name}?`, fields: [{ id: "r", label: "Reason (shown to the user)", value: "ID photo is not clear. Please upload again.", type: "area" }], ok: "Reject", danger: true,
+    onOk: (v) => { const u = D.users[id]; u.host = "rejected"; u.note = v.r; D.chargers.filter((c) => c.host === id && c.status === "approved").forEach((c) => (c.status = "paused")); log("Admin", `Rejected host ${u.name}`); notify(id, "Host verification", v.r); } }),
+  aApproveCharger: (id) => { const c = charger(id); modal({ title: `Approve "${c.title}"?`, fields: [{ id: "s", label: "Mark as safety checked (photos show earthing and an RCCB)", value: c.safety, type: "check" }, { id: "n", label: "Note to host (optional)", value: "" }], ok: "Approve",
+    onOk: (v) => { c.status = "approved"; c.safety = v.s; c.note = v.n; log("Admin", `Approved charger ${c.title}`); notify(c.host, "Charger approved", D.users[c.host].host === "approved" ? `${c.title} is live now.` : `${c.title} goes live once your host verification is approved.`); toast(D.users[c.host].host === "approved" ? "Charger is live on the map" : "Approved. It goes live once the host is approved too."); } }); },
+  aRejectCharger: (id) => modal({ title: `Reject "${charger(id).title}"?`, fields: [{ id: "r", label: "What should the host fix?", value: "Please add a clear photo of the charger and the parking spot.", type: "area" }], ok: "Reject", danger: true,
+    onOk: (v) => { const c = charger(id); c.status = "rejected"; c.note = v.r; log("Admin", `Rejected charger ${c.title}`); notify(c.host, "Charger needs changes", v.r); } }),
+  aCancel: (id) => modal({ title: `Cancel booking #${id}?`, text: "The driver gets a full refund.", fields: [{ id: "r", label: "Reason", value: "" }], ok: "Cancel with full refund", danger: true,
+    onOk: (v) => { const b = booking(id); b.status = "cancelled"; b.by = "admin"; b.reason = v.r || "Cancelled by support"; b.refund = b.amount; log("Admin", `Cancelled #${b.id}, ${rs(b.amount)} refunded`); notify(b.driver, "Refund issued", `${rs(b.amount)} is on its way back to you.`, b.id); notify(b.host, "Booking cancelled", `Support cancelled booking #${b.id}.`, b.id); } }),
+  aRefund: (id) => { const b = booking(id); const max = b.amount - b.refund; modal({ title: `Refund booking #${id}`, text: `Up to ${rs(max, 2)} can be refunded.${b.payout && D.payouts.find((p) => p.id === b.payout)?.status === "paid" ? " The host was already paid; settle that separately." : " The host's earning goes down by the same amount."}`, fields: [{ id: "a", label: "Amount in ₹", value: String(Math.min(max, 5000) / 100), num: true }, { id: "r", label: "Reason", value: "Goodwill refund" }], ok: "Refund",
+    onOk: (v) => { const amt = Math.round(Number(v.a) * 100); if (!(amt > 0) || amt > max) { toast(`Enter an amount up to ${rs(max, 2)}`); return false; } b.refund += amt; if (b.final != null) settle(b, Math.max(0, b.final - amt)); b.reason = (b.reason ? b.reason + " | " : "") + "Admin refund: " + v.r; b.by = b.by || "admin"; log("Admin", `Refunded ${rs(amt)} on #${b.id}`); notify(b.driver, "Refund issued", `${rs(amt)} is on its way back to you.`, b.id); } }); },
+  aResolve: (id) => { const r = D.reports.find((x) => x.id === Number(id)); modal({ title: "Reply and resolve", text: esc(r.msg), fields: [{ id: "r", label: "Reply to the user", value: "Thanks for telling us. We've spoken to the host and the socket has been fixed.", type: "area" }], ok: "Send and resolve",
+    onOk: (v) => { r.status = "resolved"; r.reply = v.r; log("Admin", `Resolved report #${r.id}`); notify(r.from, "Update on your report", v.r); } }); },
+  aGenPayouts: () => {
+    const owed = D.bookings.filter((b) => b.earn > 0 && !b.payout); if (!owed.length) return toast("No new earnings to pay out");
+    const byHost = {}; owed.forEach((b) => (byHost[b.host] ||= []).push(b));
+    Object.entries(byHost).forEach(([h, items]) => { const p = { id: D.nextP++, host: h, amount: items.reduce((a, b) => a + b.earn, 0), count: items.length, upi: D.users[h].upi, status: "pending", ref: "" }; D.payouts.push(p); items.forEach((b) => (b.payout = p.id)); });
+    UI.adminFilter.payouts = "pending"; log("Admin", `Created ${Object.keys(byHost).length} payout(s)`); render(); toast(`Created ${Object.keys(byHost).length} payout(s)`);
+  },
+  aMarkPaid: (id) => { const p = D.payouts.find((x) => x.id === Number(id)); modal({ title: `Mark ${rs(p.amount, 2)} as paid`, text: `Send it to <b class="mono">${esc(p.upi)}</b> from the business account, then enter the UPI transaction reference (UTR).`, fields: [{ id: "u", label: "UTR / reference", value: "UTR" + Math.floor(100000000 + Math.random() * 899999999) }], ok: "Mark paid",
+    onOk: (v) => { if (v.u.length < 3) { toast("Enter the UTR"); return false; } p.status = "paid"; p.ref = v.u; log("Payout", `${rs(p.amount)} paid to ${D.users[p.host].name}`); notify(p.host, "Payout sent", `${rs(p.amount)} sent to ${p.upi}. Ref ${v.u}`); } }); },
+  modalClose: () => closeModal(),
+  modalOk: () => modalOk(),
+};
+
+function checkIn(id, code) {
+  const b = booking(id); const c = charger(b.charger);
+  if (!code || code.replace(/\s/g, "") !== c.qr) return toast("This QR code belongs to a different charger");
+  b.status = "active"; log("Session", `Driver checked in at ${c.title} (#${b.id})`);
+  notify(b.host, "Driver arrived", `Charging started at ${c.title}.`, b.id);
+  UI.nav = [{ s: "tab", tab: "bookings" }, { s: "booking", id: b.id }]; render(); toast("Charging started. Plug in your vehicle.");
+}
+
+// delegated events
+document.addEventListener("click", (ev) => {
+  const el = ev.target.closest("[data-act]"); if (!el) return;
+  const act = el.dataset.act; if (!A[act]) return;
+  if (el.tagName === "INPUT") { A[act](el.dataset.arg, ev); return; }
+  if (act === "modalClose" && ev.target !== el && el.classList.contains("modal-bg")) return;
+  ev.preventDefault();
+  A[act](el.dataset.arg, { currentTarget: el, clientX: ev.clientX, clientY: ev.clientY });
+});
+document.addEventListener("keydown", (ev) => {
+  if (ev.key === "Escape" && modalCb) closeModal();
+  if ((ev.key === "Enter" || ev.key === " ") && ev.target.matches(".tile[data-act]")) { ev.preventDefault(); A[ev.target.dataset.act](ev.target.dataset.arg); }
+});
+document.addEventListener("input", (ev) => { if (ev.target.dataset.input === "bkNote" && UI.book) UI.book.note = ev.target.value; });
+document.getElementById("whoSel").addEventListener("change", (ev) => { UI.who = ev.target.value; UI.nav = initialNav(UI.who); UI.push = null; UI.book = null; UI.form = null; render(); });
+
+render();
+setInterval(() => { const s = document.querySelector(".status .num"); if (s) s.textContent = nowClock(); }, 30000);
+</script>

@@ -1,0 +1,18 @@
+{
+  "name": "chargeshare",
+  "version": "1.0.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "deps": "npx expo install expo-router react react-native react-dom react-native-web react-native-safe-area-context react-native-screens expo-linking expo-constants expo-status-bar expo-splash-screen expo-system-ui expo-secure-store expo-location expo-camera expo-image-picker expo-notifications expo-device expo-image expo-clipboard react-native-maps react-native-webview react-native-svg @expo/vector-icons && npx expo install typescript @types/react -- --save-dev && npm install react-native-qrcode-svg@^6.3.26",
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "typecheck": "tsc --noEmit",
+    "doctor": "npx expo-doctor"
+  },
+  "dependencies": {
+    "expo": "~58.0.14"
+  },
+  "devDependencies": {}
+}

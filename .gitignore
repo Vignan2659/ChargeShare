@@ -1,0 +1,28 @@
+# secrets
+.env
+*.env.local
+play-service-account.json
+*.p8
+*.p12
+*.keystore
+*.jks
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+backend/*.db
+backend/uploads/
+
+# node / expo
+node_modules/
+.expo/
+dist/
+web-build/
+mobile/android/
+mobile/ios/
+
+# os
+.DS_Store
+_to_delete/

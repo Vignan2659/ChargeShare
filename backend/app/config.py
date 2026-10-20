@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     checkin_early_minutes: int = 15
     auto_complete_after_minutes: int = 30
     local_timezone: str = "Asia/Kolkata"
+    overstay_grace_minutes: int = 15  # free minutes after the slot ends before an overstay fee applies
+    overstay_max_blocks: int = 8  # cap the overstay fee at 8 × 15 min
+    not_working_auto_offline: int = 2  # this many "charger not working" reports in 7 days takes a charger offline
+    location_fuzz_meters: int = 250  # approximate location shown on the map before a booking is confirmed
 
     # --- admin bootstrap: these phone numbers become admins on first login ---
     admin_phones: str = ""  # e.g. "+919876543210,+919812345678"

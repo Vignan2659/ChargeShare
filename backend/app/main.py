@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .config import get_settings
 from .db import SessionLocal, init_db
-from .routers import admin, auth, bookings, chargers, community, me, payments
+from .routers import admin, auth, bookings, chargers, communities, community, me, payments, receipts
 from .services import booking_logic
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -55,7 +55,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for r in (auth.router, me.router, chargers.router, bookings.router, payments.router, community.router, admin.router):
+for r in (
+    auth.router, me.router, chargers.router, bookings.router, payments.router, community.router,
+    communities.router, receipts.router, admin.router,
+):
     app.include_router(r)
 
 if settings.storage_backend == "local":

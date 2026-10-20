@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Alert, View } from "react-native";
 
-import { api } from "../../src/api";
+import { api, ApiError } from "../../src/api";
 import { useAuth } from "../../src/auth";
 import { dayLabel, durationLabel, parseUtc, priceLabel, rupees, timeLabel } from "../../src/format";
 import { space } from "../../src/theme";
@@ -108,9 +108,27 @@ export default function Book() {
         params: { bookingId: String(res.booking.id), provider: res.provider, url: res.checkout_url, amount: String(res.booking.amount_paise) },
       });
     } catch (e) {
-      Alert.alert("Couldn't book", (e as Error).message);
+      if (e instanceof ApiError && e.status === 402) {
+        Alert.alert("Pending dues", e.message, [
+          { text: "Later", style: "cancel" },
+          { text: "Pay now", onPress: () => router.push("/dues") },
+        ]);
+      } else {
+        Alert.alert("Couldn't book", (e as Error).message);
+      }
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function joinWaitlist() {
+    const d = days[dayIdx];
+    const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    try {
+      await api(`/chargers/${id}/waitlist`, { body: { day } });
+      Alert.alert("You're on the waitlist", "We'll send you a notification if a slot opens up on this day.");
+    } catch (e) {
+      Alert.alert("Couldn't join the waitlist", (e as Error).message);
     }
   }
 
@@ -132,9 +150,14 @@ export default function Book() {
         ))}
       </Row>
 
+      {c.offline && <Notice tone="red" icon="close-circle" text="The host marked this charger temporarily unavailable. Join the waitlist to hear when it's back." />}
+      {c.offpeak_price_paise ? <Notice icon="moon-outline" text={`Cheaper off-peak rate ${rupees(c.offpeak_price_paise)} from ${c.offpeak_start} to ${c.offpeak_end}. The total below already includes it.`} /> : null}
       <H2>Start time</H2>
-      {startOptions.length === 0 ? (
-        <Small>No free slots on this day. Try another day.</Small>
+      {startOptions.length === 0 || c.offline ? (
+        <>
+          <Small>{c.offline ? "Not bookable right now." : "No free slots on this day. Try another day."}</Small>
+          <Button title="Notify me if a slot opens" icon="notifications-outline" variant="secondary" onPress={joinWaitlist} />
+        </>
       ) : (
         <Row style={{ flexWrap: "wrap" }}>
           {startOptions.map((d) => (

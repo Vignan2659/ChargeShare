@@ -115,9 +115,19 @@ class Charger(Base):
     status: Mapped[str] = mapped_column(String(16), default=ChargerStatus.PENDING, index=True)
     admin_note: Mapped[str] = mapped_column(Text, default="")
     qr_token: Mapped[str] = mapped_column(String(40), default=new_qr_token, unique=True)
+    # --- added: gap-filling features ---
+    area: Mapped[str] = mapped_column(String(120), default="")  # locality shown publicly instead of the full address
+    offpeak_price_paise: Mapped[int | None] = mapped_column(Integer, nullable=True)  # cheaper rate in a time window
+    offpeak_start: Mapped[str] = mapped_column(String(5), default="22:00")
+    offpeak_end: Mapped[str] = mapped_column(String(5), default="06:00")
+    idle_fee_paise: Mapped[int] = mapped_column(Integer, default=0)  # per 15 min of overstay after the grace period
+    offline: Mapped[bool] = mapped_column(Boolean, default=False)  # "temporarily unavailable"
+    offline_reason: Mapped[str] = mapped_column(String(200), default="")
+    community_id: Mapped[int | None] = mapped_column(ForeignKey("communities.id"), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
     host: Mapped[User] = relationship(back_populates="chargers")
+    community: Mapped[Optional["Community"]] = relationship()
 
 
 class Booking(Base):
@@ -149,12 +159,18 @@ class Booking(Base):
     checked_in_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     payout_id: Mapped[int | None] = mapped_column(ForeignKey("payouts.id"), nullable=True, index=True)
+    # --- added ---
+    checklist: Mapped[dict] = mapped_column(JSON, default=dict)  # safety checklist ticked at check-in
+    charger_failed: Mapped[bool] = mapped_column(Boolean, default=False)  # driver reported "charger not working"
+    extended_minutes: Mapped[int] = mapped_column(Integer, default=0)
+    overstay_minutes: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
     charger: Mapped[Charger] = relationship()
     driver: Mapped[User] = relationship(foreign_keys=[driver_id])
     host: Mapped[User] = relationship(foreign_keys=[host_id])
     payment: Mapped[Optional["Payment"]] = relationship(back_populates="booking", uselist=False)
+    extras: Mapped[list["ExtraCharge"]] = relationship(back_populates="booking", order_by="ExtraCharge.id")
 
 
 class Payment(Base):
@@ -173,6 +189,81 @@ class Payment(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
 
     booking: Mapped[Booking] = relationship(back_populates="payment")
+
+
+class ExtraCharge(Base):
+    """Money collected after the main booking payment: slot extensions and overstay fees."""
+
+    __tablename__ = "extra_charges"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    booking_id: Mapped[int] = mapped_column(ForeignKey("bookings.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)  # who pays (the driver)
+    host_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(16))  # extension | overstay
+    minutes: Mapped[int] = mapped_column(Integer, default=0)
+    amount_paise: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(24), default="created")  # created | due | paid | refunded | partially_refunded | cancelled
+    provider: Mapped[str] = mapped_column(String(16), default="")
+    order_id: Mapped[str] = mapped_column(String(80), default="", index=True)
+    provider_payment_id: Mapped[str] = mapped_column(String(80), default="")
+    refunded_paise: Mapped[int] = mapped_column(Integer, default=0)
+    refund_ids: Mapped[list] = mapped_column(JSON, default=list)
+    commission_paise: Mapped[int] = mapped_column(Integer, default=0)  # overstay only (extensions roll into the booking)
+    host_earning_paise: Mapped[int] = mapped_column(Integer, default=0)
+    payout_id: Mapped[int | None] = mapped_column(ForeignKey("payouts.id"), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    booking: Mapped[Booking] = relationship(back_populates="extras")
+
+
+class Community(Base):
+    """A housing society / apartment complex. Its chargers are visible only to approved residents."""
+
+    __tablename__ = "communities"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(160))
+    address: Mapped[str] = mapped_column(String(300))
+    code: Mapped[str] = mapped_column(String(12), unique=True, index=True)  # residents join with this
+    manager_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    status: Mapped[str] = mapped_column(String(16), default="pending")  # pending | approved | rejected (by admin)
+    admin_note: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+    manager: Mapped[User] = relationship()
+
+
+class CommunityMember(Base):
+    __tablename__ = "community_members"
+    __table_args__ = (UniqueConstraint("community_id", "user_id", name="uq_member_once"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    community_id: Mapped[int] = mapped_column(ForeignKey("communities.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    flat: Mapped[str] = mapped_column(String(40))
+    status: Mapped[str] = mapped_column(String(16), default="pending")  # pending | approved | rejected
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+    user: Mapped[User] = relationship()
+    community: Mapped[Community] = relationship()
+
+
+class WaitlistEntry(Base):
+    """'Notify me if a slot opens' for one charger on one local day."""
+
+    __tablename__ = "waitlist"
+    __table_args__ = (UniqueConstraint("user_id", "charger_id", "day", name="uq_wait_once"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    charger_id: Mapped[int] = mapped_column(ForeignKey("chargers.id"), index=True)
+    day: Mapped[str] = mapped_column(String(10))  # YYYY-MM-DD, local
+    notified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+    user: Mapped[User] = relationship()
 
 
 class Review(Base):

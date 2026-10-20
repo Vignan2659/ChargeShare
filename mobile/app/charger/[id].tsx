@@ -5,7 +5,7 @@ import { ScrollView, useWindowDimensions, View } from "react-native";
 import { api } from "../../src/api";
 import { useAuth } from "../../src/auth";
 import { openDirections } from "../../src/links";
-import { hoursLabel, parseUtc, priceLabel, slotLabel } from "../../src/format";
+import { hoursLabel, parseUtc, priceLabel, rupees, slotLabel } from "../../src/format";
 import { space } from "../../src/theme";
 import type { ChargerDetail } from "../../src/types";
 import { Badge, Body, Button, Card, Divider, Empty, H1, H2, InfoRow, Loading, Notice, Row, Screen, Small, Stars, useLoad } from "../../src/ui";
@@ -37,7 +37,20 @@ export default function ChargerScreen() {
           {c.rating_count > 0 && <Small>({c.rating_count} reviews)</Small>}
           {c.safety_checked && <Badge label="Safety checked" tone="green" />}
           {c.auto_accept && <Badge label="Instant book" tone="blue" />}
+          {c.available_now && <Badge label="Free right now" tone="green" />}
         </Row>
+        {c.offline && (
+          <Notice tone="red" icon="close-circle" text={`Temporarily unavailable${c.offline_reason ? `: ${c.offline_reason}` : ""}. You can join the waitlist from the booking screen.`} />
+        )}
+        <Card>
+          <Row style={{ justifyContent: "space-between" }}>
+            <Body style={{ fontWeight: "700" }}>Reliability</Body>
+            <Body style={{ fontWeight: "700" }}>{c.reliability_pct != null ? `${c.reliability_pct}%` : "New"}</Body>
+          </Row>
+          <Small>
+            {c.sessions_completed} successful sessions · {c.failed_reports} "not working" reports. If a charger doesn't work when you arrive, you get a full refund.
+          </Small>
+        </Card>
         <Card>
           <Row style={{ justifyContent: "space-between" }}>
             <H2>{priceLabel(c)}</H2>
@@ -47,7 +60,12 @@ export default function ChargerScreen() {
           <InfoRow icon="flash-outline" text={`${c.connector_type} · ${c.power_kw} kW`} />
           <InfoRow icon="car-outline" text={`Suitable for: ${c.vehicle_types.map((v) => (v === "2W" ? "scooters/bikes" : v === "3W" ? "autos" : "cars")).join(", ")}`} />
           <InfoRow icon="time-outline" text={hoursLabel(c.open_time, c.close_time)} />
-          <InfoRow icon="location-outline" text={c.address} />
+          <InfoRow icon="location-outline" text={c.location_approximate ? `${c.address} (approximate: exact spot shown after the host confirms)` : c.address} />
+          {c.offpeak_price_paise ? (
+            <InfoRow icon="moon-outline" text={`Off-peak ${rupees(c.offpeak_price_paise)}/${c.pricing_mode === "kwh" ? "kWh" : "hr"} from ${c.offpeak_start} to ${c.offpeak_end}`} />
+          ) : null}
+          {c.idle_fee_paise ? <InfoRow icon="hourglass-outline" text={`Overstay fee ${rupees(c.idle_fee_paise)} per 15 min after a 15-min grace period`} /> : null}
+          {c.community_name ? <InfoRow icon="business-outline" text={`Residents of ${c.community_name} only`} /> : null}
           {c.distance_km != null && <InfoRow icon="navigate-outline" text={`${c.distance_km.toFixed(1)} km away`} />}
         </Card>
 
@@ -68,11 +86,11 @@ export default function ChargerScreen() {
           </Card>
         )}
 
-        <Button title="Directions" variant="secondary" icon="navigate" onPress={() => openDirections(c.lat, c.lng, c.title)} />
+        <Button title={c.location_approximate ? "Directions to the area" : "Directions"} variant="secondary" icon="navigate" onPress={() => openDirections(c.lat, c.lng, c.title)} />
         {mine ? (
           <Notice text="This is your own charger." />
         ) : (
-          <Button title="Book a slot" icon="calendar" onPress={() => router.push(`/book/${c.id}`)} />
+          <Button title={c.offline ? "See slots / join waitlist" : "Book a slot"} icon="calendar" onPress={() => router.push(`/book/${c.id}`)} />
         )}
 
         <H2>Reviews</H2>

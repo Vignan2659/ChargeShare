@@ -8,7 +8,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { api } from "../../src/api";
 import { useAuth } from "../../src/auth";
-import { hoursLabel, priceLabel } from "../../src/format";
+import { hoursLabel, priceLabel, rupees } from "../../src/format";
 import { colors, radius, space } from "../../src/theme";
 import type { Charger } from "../../src/types";
 import { Badge, Body, Card, Chip, Empty, Row, Small, Stars } from "../../src/ui";
@@ -28,6 +28,7 @@ export default function Find() {
   const [mode, setMode] = useState<"map" | "list">("map");
   const [vehicle, setVehicle] = useState<Vehicle>((user?.vehicle_type as Vehicle) ?? "");
   const [selected, setSelected] = useState<Charger | null>(null);
+  const [nowOnly, setNowOnly] = useState(false);
 
   const search = useCallback(
     async (lat: number, lng: number, radiusKm = 10) => {
@@ -35,6 +36,7 @@ export default function Find() {
       try {
         const qs = new URLSearchParams({ lat: String(lat), lng: String(lng), radius_km: String(Math.min(50, Math.max(2, radiusKm))) });
         if (vehicle) qs.set("vehicle", vehicle);
+        if (nowOnly) qs.set("available_now", "true");
         setChargers(await api<Charger[]>(`/chargers?${qs}`));
         setError(null);
         setMoved(false);
@@ -44,7 +46,7 @@ export default function Find() {
         setLoading(false);
       }
     },
-    [vehicle],
+    [vehicle, nowOnly],
   );
 
   useEffect(() => {
@@ -74,7 +76,7 @@ export default function Find() {
     const r = region ?? { ...center, latitudeDelta: 0.08 };
     void search(r.latitude, r.longitude, (r.latitudeDelta * 111) / 2);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vehicle]);
+  }, [vehicle, nowOnly]);
 
   const searchHere = () => {
     if (!region) return;
@@ -95,6 +97,7 @@ export default function Find() {
           {(["", "2W", "3W", "4W"] as Vehicle[]).map((v) => (
             <Chip key={v || "all"} label={v === "" ? "All" : v === "2W" ? "Scooter" : v === "3W" ? "Auto" : "Car"} selected={vehicle === v} onPress={() => setVehicle(v)} />
           ))}
+          <Chip label="⚡ Available now" selected={nowOnly} onPress={() => setNowOnly(!nowOnly)} />
         </Row>
       </View>
 
@@ -170,6 +173,11 @@ function ChargerCard({ c }: { c: Charger }) {
       <Row style={{ flexWrap: "wrap" }}>
         <Stars value={c.rating_avg} />
         <Small>· {hoursLabel(c.open_time, c.close_time)}</Small>
+        {c.offline && <Badge label="Temporarily unavailable" tone="red" />}
+        {!c.offline && c.available_now && <Badge label="Free now" tone="green" />}
+        {c.reliability_pct != null && <Badge label={`${c.reliability_pct}% reliable`} tone={c.reliability_pct >= 90 ? "green" : c.reliability_pct >= 70 ? "amber" : "red"} />}
+        {c.offpeak_price_paise ? <Badge label={`Off-peak ${rupees(c.offpeak_price_paise)}`} tone="blue" /> : null}
+        {c.community_name ? <Badge label={`Society: ${c.community_name}`} tone="amber" /> : null}
         {c.safety_checked && <Badge label="Safety checked" tone="green" />}
         {c.auto_accept && <Badge label="Instant book" tone="blue" />}
         {c.society_only && <Badge label={`Residents only${c.society_name ? `: ${c.society_name}` : ""}`} tone="amber" />}

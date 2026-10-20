@@ -23,8 +23,9 @@ function PushSetup() {
     void registerForPush();
     // tapping a notification opens the booking it is about
     const sub = Notifications.addNotificationResponseReceivedListener((resp) => {
-      const id = resp.notification.request.content.data?.bookingId;
-      if (id) router.push(`/booking/${id}`);
+      const data = resp.notification.request.content.data ?? {};
+      if (data.bookingId) router.push(`/booking/${data.bookingId}`);
+      else if (data.chargerId) router.push(`/charger/${data.chargerId}`);
     });
     return () => sub.remove();
   }, [user?.id]);
@@ -63,6 +64,9 @@ export default function RootLayout() {
           <Stack.Screen name="host/charger/[id]" options={{ title: "Manage charger" }} />
           <Stack.Screen name="host/earnings" options={{ title: "Earnings" }} />
           <Stack.Screen name="profile-edit" options={{ title: "Edit profile" }} />
+          <Stack.Screen name="dues" options={{ title: "Pending dues" }} />
+          <Stack.Screen name="society/index" options={{ title: "Housing society" }} />
+          <Stack.Screen name="society/[id]" options={{ title: "Manage society" }} />
         </Stack>
       </AuthProvider>
     </SafeAreaProvider>

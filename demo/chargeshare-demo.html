@@ -309,13 +309,14 @@ function seed() {
     anita: { id: "anita", name: "Anita Rao", phone: "+91 90000 00005", vehicle: "2W", host: "none", upi: "", note: "", docs: 0, deleted: false },
     suresh: { id: "suresh", name: "Suresh Naidu", phone: "+91 90000 00006", vehicle: "4W", host: "pending", upi: "suresh.n@ybl", note: "", docs: 2, deleted: false },
   };
-  const base = { photos: 2, note: "", reviews: [], noc: true, society: false, societyName: "", safety: true };
+  const base = { photos: 2, note: "", reviews: [], noc: true, society: false, societyName: "", safety: true, offpeak: null, opS: "22:00", opE: "06:00", idle: 0, offline: false, offReason: "", community: null, okSeed: 0, failSeed: 0, area: "" };
   const chargers = [
-    { ...base, id: 1, host: "ravi", title: "Gachibowli Villa Charger", address: "Road 2, Gachibowli, Hyderabad", x: 0.38, y: 0.52, vehicles: ["4W"], connector: "Type 2 (AC)", kw: 7.4, mode: "kwh", price: 1600, open: "06:00", close: "23:00", instant: false, status: "approved", qr: "GV7K-2QXA", access: "Gate 2, villa no. 14. Charger is on the left wall of the car porch.", desc: "Covered car porch with CCTV. Wi-Fi password at the gate.", reviews: [{ by: "Priya", stars: 5, text: "Easy to find and Ravi was very helpful." }, { by: "Arjun", stars: 4, text: "Good charger, gate took a minute." }] },
-    { ...base, id: 2, host: "ravi", title: "Kondapur Apartment Socket", address: "Botanical Garden Rd, Kondapur", x: 0.52, y: 0.28, vehicles: ["2W", "3W"], connector: "15A socket", kw: 3.3, mode: "hour", price: 2500, open: "00:00", close: "00:00", instant: true, status: "approved", qr: "KA4P-8MZT", access: "Basement B1, slot 42. Tell the guard you're charging at 304.", desc: "Plain 15A socket on a dedicated circuit. Bring your own charger cable.", reviews: [{ by: "Karthik", stars: 5, text: "Perfect for my Ather." }] },
-    { ...base, id: 3, host: "ravi", title: "Madhapur Office Parking", address: "Hitech City Rd, Madhapur", x: 0.72, y: 0.42, vehicles: ["2W", "4W"], connector: "Type 2 (AC)", kw: 11, mode: "hour", price: 12000, open: "08:00", close: "20:00", instant: true, status: "approved", qr: "MO9C-3HRD", access: "Visitor parking, level P2, bay 7.", desc: "Office parking, available weekdays and weekends.", safety: false },
-    { ...base, id: 4, host: "ravi", title: "Jubilee Hills Home Charger", address: "Road 36, Jubilee Hills", x: 0.86, y: 0.66, vehicles: ["4W"], connector: "Bharat AC-001", kw: 3.3, mode: "kwh", price: 1400, open: "18:00", close: "08:00", instant: false, status: "approved", qr: "JH2B-6WNE", access: "Ring bell at house 8-2-293.", desc: "Night charging only.", society: false },
-    { ...base, id: 5, host: "suresh", title: "Kokapet Society Charger", address: "Tower C, Lake View Residency, Kokapet", x: 0.18, y: 0.78, vehicles: ["2W", "4W"], connector: "Type 2 (AC)", kw: 7.4, mode: "hour", price: 9000, open: "00:00", close: "00:00", instant: false, status: "pending", qr: "KS5D-1LPV", access: "Tower C basement, slot C-17.", desc: "Society-approved charger for residents.", society: true, societyName: "Lake View Residency", safety: false, photos: 3 },
+    { ...base, id: 1, host: "ravi", title: "Gachibowli Villa Charger", address: "Road 2, Gachibowli, Hyderabad", x: 0.38, y: 0.52, vehicles: ["4W"], connector: "Type 2 (AC)", kw: 7.4, mode: "kwh", price: 1600, open: "06:00", close: "23:00", instant: false, status: "approved", area: "Gachibowli", offpeak: 1200, idle: 2000, okSeed: 23, failSeed: 1, qr: "GV7K-2QXA", access: "Gate 2, villa no. 14. Charger is on the left wall of the car porch.", desc: "Covered car porch with CCTV. Wi-Fi password at the gate.", reviews: [{ by: "Priya", stars: 5, text: "Easy to find and Ravi was very helpful." }, { by: "Arjun", stars: 4, text: "Good charger, gate took a minute." }] },
+    { ...base, id: 2, host: "ravi", title: "Kondapur Apartment Socket", address: "Botanical Garden Rd, Kondapur", x: 0.52, y: 0.28, vehicles: ["2W", "3W"], connector: "15A socket", kw: 3.3, mode: "hour", price: 2500, open: "00:00", close: "00:00", instant: true, status: "approved", area: "Kondapur", offpeak: 1500, okSeed: 41, qr: "KA4P-8MZT", access: "Basement B1, slot 42. Tell the guard you're charging at 304.", desc: "Plain 15A socket on a dedicated circuit. Bring your own charger cable.", reviews: [{ by: "Karthik", stars: 5, text: "Perfect for my Ather." }] },
+    { ...base, id: 3, host: "ravi", title: "Madhapur Office Parking", address: "Hitech City Rd, Madhapur", x: 0.72, y: 0.42, vehicles: ["2W", "4W"], connector: "Type 2 (AC)", kw: 11, mode: "hour", price: 12000, open: "08:00", close: "20:00", instant: true, status: "approved", area: "Madhapur", idle: 3000, okSeed: 12, failSeed: 3, qr: "MO9C-3HRD", access: "Visitor parking, level P2, bay 7.", desc: "Office parking, available weekdays and weekends.", safety: false },
+    { ...base, id: 4, host: "ravi", title: "Jubilee Hills Home Charger", address: "Road 36, Jubilee Hills", x: 0.86, y: 0.66, vehicles: ["4W"], connector: "Bharat AC-001", kw: 3.3, mode: "kwh", price: 1400, open: "18:00", close: "08:00", instant: false, status: "approved", area: "Jubilee Hills", okSeed: 6, qr: "JH2B-6WNE", access: "Ring bell at house 8-2-293.", desc: "Night charging only.", society: false },
+    { ...base, id: 5, host: "suresh", title: "Kokapet Society Charger", address: "Tower C, Lake View Residency, Kokapet", x: 0.18, y: 0.78, vehicles: ["2W", "4W"], connector: "Type 2 (AC)", kw: 7.4, mode: "hour", price: 9000, open: "00:00", close: "00:00", instant: false, status: "pending", area: "Kokapet", qr: "KS5D-1LPV", access: "Tower C basement, slot C-17.", desc: "Society-approved charger for residents.", society: true, societyName: "Lake View Residency", safety: false, photos: 3 },
+    { ...base, id: 6, host: "ravi", title: "Lake View Tower B Charger", address: "Tower B basement, slot B-22, Lake View Residency, Kokapet", area: "Kokapet", x: 0.24, y: 0.68, vehicles: ["2W", "4W"], connector: "Type 2 (AC)", kw: 7.4, mode: "hour", price: 9000, open: "00:00", close: "00:00", instant: false, status: "approved", community: "lake", idle: 2500, okSeed: 9, qr: "LV6B-4TRA", access: "Tower B basement, slot B-22. Residents' parking only.", desc: "Shared by Ravi for Lake View residents. Usage shows on the society's monthly statement." },
   ];
   const mk = (id, charger, driver, start, mins, status, extra = {}) => {
     const c = chargers.find((x) => x.id === charger);
@@ -328,10 +329,17 @@ function seed() {
     done(mk(1002, 1, "priya", at(-1, 19), 120, "completed", { reviewed: ["priya"] }), 12.4),
     done(mk(1003, 2, "karthik", at(-3, 8), 90, "completed", { vehicle: "2W" })),
     mk(1004, 3, "priya", at(-2, 10), 60, "cancelled", { refund: 0, reason: "Plans changed", by: "driver" }),
+    done(mk(1005, 6, "priya", at(-2, 20), 120, "completed", { reviewed: ["priya"] })),
   ];
   bookings[3].refund = bookings[3].amount;
   const reports = [{ id: 1, from: "karthik", about: "Booking #1003", cat: "Charger not working", msg: "The socket was a bit loose. It worked after I pushed the plug in properly.", status: "open", reply: "", when: at(-3, 10) }];
-  return { users, chargers, bookings, reports, payouts: [], log: [], nextB: 1005, nextC: 6, nextP: 1 };
+  const communities = {
+    lake: { id: "lake", name: "Lake View Residency", address: "Kokapet, Hyderabad", code: "LAKE01", manager: "ravi", status: "approved",
+      members: [{ user: "ravi", flat: "B-1204", status: "approved" }, { user: "priya", flat: "B-803", status: "approved" }, { user: "karthik", flat: "A-402", status: "pending" }] },
+    green: { id: "green", name: "Green Meadows", address: "Miyapur, Hyderabad", code: "GRN7Q2", manager: "suresh", status: "pending", members: [{ user: "suresh", flat: "A-101", status: "approved" }] },
+  };
+  bookings.forEach((b) => (b.extras = []));
+  return { users, chargers, bookings, reports, communities, waitlist: [], payouts: [], log: [], nextB: 1006, nextC: 7, nextP: 1 };
 }
 
 // ---------- app state ----------
@@ -340,6 +348,7 @@ const UI = {
   view: "app", who: "priya", loggedIn: { priya: true, karthik: true, ravi: true, anita: true, suresh: true },
   nav: [{ s: "tab", tab: "find" }], vfilter: "", listMode: "map", selPin: null,
   book: null, scope: "upcoming", adminTab: "dash", adminFilter: {}, push: null,
+  nowOnly: false, broken: null, checks: { cable: false, conn: false, dry: false }, socMode: "none",
 };
 function initialNav(who) { return [{ s: "tab", tab: who === "ravi" || who === "suresh" ? "host" : "find" }]; }
 const me = () => D.users[UI.who];
@@ -389,14 +398,36 @@ function modalOk() {
 }
 
 // ---------- business rules (same as the real backend) ----------
-function estimate(c, mins) { return c.mode === "kwh" ? Math.max(100, Math.ceil(c.price * c.kw * (mins / 60))) : Math.max(100, Math.ceil(c.price * (mins / 60))); }
+function inOffpeak(c, d) { if (!c.offpeak) return false; const t = d.getHours() * 60 + d.getMinutes(); return inWin(t, toMin(c.opS), toMin(c.opE)); }
+/** Price in 15-minute steps so the host's off-peak rate applies to the part of the slot inside its window. */
+function estimate(c, mins, start) {
+  let total = 0;
+  for (let m = 0; m < mins; m += 15) {
+    const step = Math.min(15, mins - m);
+    const rate = start && inOffpeak(c, new Date(start.getTime() + m * 60000)) ? c.offpeak : c.price;
+    total += rate * (c.mode === "kwh" ? c.kw : 1) * (step / 60);
+  }
+  return Math.max(100, Math.ceil(total));
+}
+function reliability(c) {
+  const ok = c.okSeed + D.bookings.filter((b) => b.charger === c.id && b.status === "completed").length;
+  const bad = c.failSeed + D.bookings.filter((b) => b.charger === c.id && b.failed).length;
+  return { ok, bad, pct: ok + bad >= 3 ? Math.round((100 * ok) / (ok + bad)) : null };
+}
+const relBadge = (c) => { const r = reliability(c); return r.pct == null ? "" : badge([`${r.pct}% reliable`, r.pct >= 90 ? "b-green" : r.pct >= 70 ? "b-amber" : "b-red"]); };
+const memberOf = (uid, comId) => { const com = D.communities[comId]; return !!com && com.status === "approved" && com.members.some((m) => m.user === uid && m.status === "approved"); };
+const dues = (uid) => D.bookings.filter((b) => b.driver === uid).flatMap((b) => b.extras.filter((x) => x.status === "due").map((x) => ({ ...x, booking: b })));
+const freeNow = (c) => !c.offline && fits(c, new Date(), 60);
+/** Before a booking is confirmed, drivers see only the area, not the exact address. */
+const exactFor = (c, uid) => c.host === uid || D.bookings.some((b) => b.charger === c.id && b.driver === uid && ["confirmed", "active"].includes(b.status));
+const placeLbl = (c, uid) => (exactFor(c, uid) ? c.address : `${c.area || "Area"} (approximate: exact address after booking)`);
 function settle(b, final) { b.final = final; b.fee = Math.round(final * COMMISSION); b.earn = final - b.fee; }
 function fits(c, start, mins, ignoreId) {
   const o = toMin(c.open), cl = toMin(c.close), end = start.getTime() + mins * 60000;
   for (let t = start.getTime(); t < end; t += 5 * 60000) { const d = new Date(t); if (!inWin(d.getHours() * 60 + d.getMinutes(), o, cl)) return false; }
   return !D.bookings.some((b) => b.charger === c.id && b.id !== ignoreId && blocking(b) && b.start.getTime() < end && endOf(b).getTime() > start.getTime());
 }
-function liveChargers() { return D.chargers.filter((c) => c.status === "approved" && D.users[c.host].host === "approved" && !D.users[c.host].deleted); }
+function liveChargers() { return D.chargers.filter((c) => c.status === "approved" && D.users[c.host].host === "approved" && !D.users[c.host].deleted && (!c.community || c.host === UI.who || memberOf(UI.who, c.community))); }
 
 // ======================================================================
 //  MOBILE APP SCREENS
@@ -433,9 +464,9 @@ function mapSvg() {
 
 function scrFind() {
   const vf = UI.vfilter;
-  const list = liveChargers().filter((c) => !vf || c.vehicles.includes(vf));
+  const list = liveChargers().filter((c) => (!vf || c.vehicles.includes(vf)) && (!UI.nowOnly || freeNow(c)));
   const sel = list.find((c) => c.id === UI.selPin);
-  const filters = `<div class="chips">${[["", "All"], ["2W", "Scooter"], ["3W", "Auto"], ["4W", "Car"]].map(([v, l]) => `<button class="chip ${vf === v ? "on" : ""}" data-act="vfilter" data-arg="${v}">${l}</button>`).join("")}</div>`;
+  const filters = `<div class="chips">${[["", "All"], ["2W", "Scooter"], ["3W", "Auto"], ["4W", "Car"]].map(([v, l]) => `<button class="chip ${vf === v ? "on" : ""}" data-act="vfilter" data-arg="${v}">${l}</button>`).join("")}<button class="chip ${UI.nowOnly ? "on" : ""}" data-act="nowOnly">${ico("bolt", 12, 3)} Available now</button></div>`;
   const header = `<div style="padding:12px 14px 10px;background:var(--surface);display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--line)">
       <div class="row between"><div class="t-title" style="font-size:19px">Chargers near you</div>
       <button class="chip" data-act="listMode">${UI.listMode === "map" ? ico("list", 14) + " List" : ico("map", 14) + " Map"}</button></div>${filters}</div>`;
@@ -444,7 +475,7 @@ function scrFind() {
   }
   const pins = list.map((c) => `<button class="pin ${c.id === UI.selPin ? "sel" : ""}" style="left:${c.x * 100}%;top:${c.y * 100}%" data-act="pin" data-arg="${c.id}" aria-label="${esc(c.title)}">${ico("bolt", 11, 3)}${priceLbl(c)}</button>`).join("");
   return { flush: true, html: header + `<div class="mapbox">${mapSvg()}<span class="me" style="left:46%;top:46%" title="You are here"></span>${pins}
-      <div class="map-tools"><span class="float">${list.length} chargers within 10 km</span><span class="float">${ico("locate", 13)}</span></div></div>
+      <div class="map-tools"><span class="float">${list.length} chargers${UI.nowOnly ? " free now" : " within 10 km"} · pins are approximate</span><span class="float">${ico("locate", 13)}</span></div></div>
       <div class="list-pad">${sel ? chargerCard(sel) : `<div class="small" style="text-align:center">Tap a price pin to see the charger.</div>`}
       ${!sel ? list.slice(0, 2).map(chargerCard).join("") : ""}</div>` };
 }
@@ -455,6 +486,8 @@ function chargerCard(c) {
     <div class="row between" style="align-items:flex-start"><div style="min-width:0"><div class="t-title">${esc(c.title)}</div>
     <div class="small">${esc(c.connector)} · ${c.kw} kW · ${c.vehicles.map((v) => VEH[v]).join(", ")}</div></div><div class="price">${priceLbl(c)}</div></div>
     <div class="row wrap-r">${r ? `<span class="stars">${ico("star", 13)} ${r.toFixed(1)}</span>` : `<span class="small">New</span>`}<span class="small">· ${hoursLbl(c)}</span>
+    ${c.offline ? badge(["Temporarily unavailable", "b-red"]) : freeNow(c) ? badge(["Free now", "b-green"]) : ""}${relBadge(c)}
+    ${c.offpeak ? badge([`Off-peak ${rs(c.offpeak)} after ${c.opS}`, "b-blue"]) : ""}${c.community ? badge([`Society: ${D.communities[c.community].name}`, "b-amber"]) : ""}
     ${c.safety ? badge(["Safety checked", "b-green"]) : ""}${c.instant ? badge(["Instant book", "b-blue"]) : ""}${c.society ? badge(["Residents only", "b-amber"]) : ""}</div></button>`;
 }
 
@@ -472,13 +505,18 @@ function scrCharger(id) {
         <div class="info">${ico("car", 16)}<span><b>Vehicles:</b> ${c.vehicles.map((v) => VEH[v]).join(", ")}</span></div>
         <div class="info">${ico("wallet", 16)}<span><b>Charging price:</b> ${c.mode === "kwh" ? "per unit used (kWh)" : "per hour of the slot"}</span></div>
         <div class="info">${ico("clock", 16)}<span>${hoursLbl(c)}</span></div>
-        <div class="info">${ico("pin", 16)}<span>${esc(c.address)}</span></div></div>
+        <div class="info">${ico("pin", 16)}<span>${esc(placeLbl(c, UI.who))}</span></div>
+        ${c.offpeak ? `<div class="info">${ico("clock", 16)}<span><b>Off-peak:</b> ${rs(c.offpeak)}/${c.mode === "kwh" ? "kWh" : "hr"} from ${c.opS} to ${c.opE}</span></div>` : ""}
+        ${c.idle ? `<div class="info">${ico("alert", 16)}<span><b>Overstay fee:</b> ${rs(c.idle)} per 15 min after a 15-min grace period</span></div>` : ""}
+        ${c.community ? `<div class="info">${ico("home", 16)}<span>Residents of ${esc(D.communities[c.community].name)} only</span></div>` : ""}</div>
+      ${(() => { const r = reliability(c); return `<div class="card"><div class="row between"><b>Reliability</b><b>${r.pct == null ? "New" : r.pct + "%"}</b></div><div class="small">${r.ok} successful sessions · ${r.bad} "not working" reports. If it doesn't work when you arrive, you get a full refund.</div></div>`; })()}
+      ${c.offline ? `<div class="notice n-red">${ico("alert", 16)}<span>Temporarily unavailable${c.offReason ? ": " + esc(c.offReason) : ""}. Join the waitlist to hear when it's back.</span></div>` : ""}
       ${c.mode === "kwh" ? `<div class="notice n-blue">${ico("info", 16)}<span>You pay the maximum for your slot upfront. Unused units are refunded automatically after charging.</span></div>` : ""}
       ${c.society ? `<div class="notice n-amber">${ico("home", 16)}<span>Only for residents of ${esc(c.societyName)}. The host confirms before accepting.</span></div>` : ""}
       ${c.desc ? `<div style="font-size:14px">${esc(c.desc)}</div>` : ""}
       ${busy.length ? `<div class="card"><div class="lbl">Already booked</div>${busy.map((b) => `<div class="small">${slot(b)}</div>`).join("")}</div>` : ""}
       <button class="btn sec" data-act="toast" data-arg="Opens Google Maps / Apple Maps with directions">${ico("nav", 16)} Directions</button>
-      ${mine ? `<div class="notice n-green">${ico("info", 16)}<span>This is your own charger.</span></div>` : `<button class="btn" data-act="startBook" data-arg="${c.id}">${ico("cal", 16)} Book a slot</button>`}
+      ${mine ? `<div class="notice n-green">${ico("info", 16)}<span>This is your own charger.</span></div>` : `<button class="btn" data-act="startBook" data-arg="${c.id}">${ico("cal", 16)} ${c.offline ? "See slots / join waitlist" : "Book a slot"}</button>`}
       <div class="sec-h">Reviews</div>
       ${c.reviews.length ? c.reviews.map((rv) => `<div class="card"><div class="row between"><b>${esc(rv.by)}</b><span class="stars">${ico("star", 13)} ${rv.stars}</span></div>${rv.text ? `<div style="font-size:13.5px">${esc(rv.text)}</div>` : ""}</div>`).join("") : `<div class="small">No reviews yet.</div>`}
       <button class="btn plain" data-act="open" data-arg="report:Charger: ${esc(c.title)}">Report this listing</button>
@@ -495,20 +533,27 @@ function scrBook(id) {
   const startD = bk.start ? new Date(bk.start) : null;
   const durs = [30, 60, 90, 120, 180, 240, 360].filter((m) => !startD || fits(c, startD, m));
   if (startD && !durs.includes(bk.mins)) bk.mins = durs[0] || 30;
-  const total = startD ? estimate(c, bk.mins) : 0;
+  const total = startD ? estimate(c, bk.mins, startD) : 0;
+  const myDues = dues(UI.who);
   return { title: "Book a slot", html: `
     <div class="card"><div class="t-title">${esc(c.title)}</div><div class="small">${priceLbl(c)} · ${esc(c.connector)} · ${c.kw} kW</div></div>
     <div class="sec-h">Day</div><div class="chips">${days.map((d, i) => `<button class="chip ${i === bk.day ? "on" : ""}" data-act="bkDay" data-arg="${i}">${dayLbl(d)}</button>`).join("")}</div>
+    ${myDues.length ? `<button class="card tap" data-act="open" data-arg="dues"><div class="notice n-red">${ico("alert", 16)}<span>You have ${rs(myDues.reduce((a, x) => a + x.amount, 0))} in overstay dues. Pay them to book again. Tap to pay.</span></div></button>` : ""}
+    ${c.offline ? `<div class="notice n-red">${ico("alert", 16)}<span>The host marked this charger temporarily unavailable.</span></div>` : ""}
+    ${c.offpeak ? `<div class="notice n-blue">${ico("clock", 16)}<span>Cheaper off-peak rate ${rs(c.offpeak)} from ${c.opS} to ${c.opE}. The total includes it automatically.</span></div>` : ""}
     <div class="sec-h">Start time</div>
-    ${starts.length ? `<div class="chips">${starts.map((d) => `<button class="chip ${startD && d.getTime() === startD.getTime() ? "on" : ""}" data-act="bkStart" data-arg="${d.getTime()}">${tm(d)}</button>`).join("")}</div>` : `<div class="small">No free slots on this day. Try another day.</div>`}
+    ${starts.length && !c.offline ? `<div class="chips">${starts.map((d) => `<button class="chip ${startD && d.getTime() === startD.getTime() ? "on" : ""}" data-act="bkStart" data-arg="${d.getTime()}">${tm(d)}${c.offpeak && inOffpeak(c, d) ? " ☾" : ""}</button>`).join("")}</div>`
+      : `<div class="small">${c.offline ? "Not bookable right now." : "No free slots on this day."}</div>`}
+    ${!starts.length || c.offline || starts.length < 10 ? `<button class="btn sec" data-act="waitlist" data-arg="${c.id}:${bk.day}">${ico("clock", 16)} ${D.waitlist.some((w) => w.user === UI.who && w.charger === c.id && w.day === bk.day) ? "On the waitlist for this day ✓" : "Notify me if a slot opens"}</button>` : ""}
     <div class="sec-h">How long?</div><div class="chips">${durs.map((m) => `<button class="chip ${bk.mins === m ? "on" : ""}" data-act="bkDur" data-arg="${m}">${durLbl(m)}</button>`).join("")}</div>
     ${c.vehicles.length > 1 ? `<div class="sec-h">Your vehicle</div><div class="chips">${c.vehicles.map((v) => `<button class="chip ${bk.vehicle === v ? "on" : ""}" data-act="bkVeh" data-arg="${v}">${VEH[v]}</button>`).join("")}</div>` : ""}
     <div class="field"><label class="lbl" for="bkNote">Vehicle details (optional)</label><input id="bkNote" value="${esc(bk.note)}" placeholder="e.g. Nexon EV, white, TS09 AB 1234" data-input="bkNote"></div>
     ${startD ? `<div class="card"><div class="small">${dayLbl(startD)}, ${tm(startD)} – ${tm(new Date(startD.getTime() + bk.mins * 60000))}</div>
       <div class="row between"><span class="t-title">Total</span><span class="t-title num">${rs(total, 2)}</span></div>
-      <div class="small">${c.mode === "kwh" ? `${rs(c.price)} × ${c.kw} kW × ${durLbl(bk.mins)} (maximum). Unused units refunded.` : `${rs(c.price)}/hr × ${durLbl(bk.mins)}`}</div></div>` : ""}
+      <div class="small">${c.mode === "kwh" ? `Up to ${c.kw} kW × ${durLbl(bk.mins)} at ${rs(c.price)}/kWh${c.offpeak ? ` (${rs(c.offpeak)} off-peak)` : ""}, maximum. Unused units refunded.` : `${durLbl(bk.mins)} at ${rs(c.price)}/hr${c.offpeak ? ` (${rs(c.offpeak)}/hr off-peak)` : ""}`}</div>
+      ${c.idle ? `<div class="small">Overstay fee ${rs(c.idle)} per 15 min after a 15-min grace period.</div>` : ""}</div>` : ""}
     <div class="notice n-blue">${ico("info", 16)}<span>Free cancellation up to 1 hour before your slot. Later cancellations get a 50% refund.</span></div>
-    <button class="btn" data-act="confirmBook" ${startD ? "" : "disabled"}>${startD ? `Pay ${rs(total)} and book` : "Choose a start time"}</button>` };
+    <button class="btn" data-act="confirmBook" ${startD && !myDues.length && !c.offline ? "" : "disabled"}>${startD ? `Pay ${rs(total)} and book` : "Choose a start time"}</button>` };
 }
 
 function scrPay(id) {
@@ -530,19 +575,26 @@ function scrBooking(id) {
   if (isDriver && b.status === "pending_payment") acts.push(`<button class="btn" data-act="open" data-arg="pay:${b.id}">Pay now</button>`);
   if (isDriver && b.status === "requested") acts.push(`<div class="notice n-amber">${ico("clock", 16)}<span>Waiting for ${esc(other.name.split(" ")[0])} to accept. If they don't respond before your slot starts, you get a full refund.</span></div>`);
   if (isDriver && b.status === "confirmed") acts.push(`<button class="btn" data-act="open" data-arg="scan:${b.id}">${ico("qr", 16)} I've arrived: scan QR</button><div class="small" style="text-align:center">Check-in opens 15 minutes before your slot.</div>`);
+  if (isDriver && shared) acts.push(`<div class="card"><div class="t-title">Need more time?</div><div class="small">Extend if the next slot is free. You pay only for the extra time.</div>
+      <div class="btns">${[15, 30, 60].map((m) => `<button class="btn sec" data-act="extend" data-arg="${b.id}:${m}">+${m} min</button>`).join("")}</div></div>`);
   if (shared) acts.push(`<div class="btns">${isDriver ? `<button class="btn sec" data-act="toast" data-arg="Opens maps with directions">${ico("nav", 16)} Directions</button>` : ""}<button class="btn sec" data-act="toast" data-arg="Calls ${esc(other.phone)}">${ico("phone", 16)} Call ${isDriver ? "host" : "driver"}</button></div>`);
   if (b.status === "active") acts.push(`<div class="card"><div class="t-title">Charging in progress</div>
       ${b.mode === "kwh" ? `<div class="field"><label class="lbl" for="kwhIn">Units used (kWh)</label><input id="kwhIn" inputmode="decimal" placeholder="e.g. 9.6" value="9.6"><span class="small">Read it from the charger or meter when you unplug.</span></div>` : `<div class="small">When you're done, unplug and finish the session.</div>`}
+      ${isDriver && c.idle ? `<label class="check"><input type="checkbox" id="lateIn"> <span class="small">Demo: I'm unplugging 40 minutes after my slot ended (overstay fee ${rs(c.idle)}/15 min after 15 min grace)</span></label>` : ""}
       <button class="btn" data-act="finish" data-arg="${b.id}">${ico("check", 16)} Finish charging</button></div>`);
+  if (isDriver && shared) acts.push(`<button class="btn danger" data-act="brokenToggle">${ico("alert", 16)} Charger not working? Get a full refund</button>
+      ${UI.broken === b.id ? `<div class="card"><div class="small">What's wrong? You get a full refund straight away and the host is told.</div>${["No power / doesn't start", "Connector doesn't fit", "Damaged or unsafe", "Can't get access"].map((r) => `<button class="btn sec" data-act="notWorking" data-arg="${b.id}:${r}">${r}</button>`).join("")}</div>` : ""}`);
+  if (!isDriver && b.checklist) acts.push(`<div class="notice n-green">${ico("shield", 16)}<span>Driver confirmed the safety checklist at ${tm(b.checklist)}: cable OK, connector matches, area dry.</span></div>`);
   if (!isDriver && b.status === "requested") acts.push(`<div class="btns"><button class="btn" data-act="hostAccept" data-arg="${b.id}">${ico("check", 16)} Accept</button><button class="btn danger" data-act="hostDecline" data-arg="${b.id}">Decline</button></div>`);
   if (["pending_payment", "requested", "confirmed"].includes(b.status) && !(!isDriver && b.status === "requested")) acts.push(`<button class="btn danger" data-act="cancelBk" data-arg="${b.id}">Cancel booking</button>`);
   if (b.status === "completed" && !b.reviewed.includes(UI.who)) acts.push(`<button class="btn" data-act="open" data-arg="review:${b.id}">${ico("star", 16)} ${isDriver ? "Rate this charger" : "Rate this driver"}</button>`);
+  if (["completed", "cancelled", "declined"].includes(b.status) && b.amount) acts.push(`<button class="btn sec" data-act="receipt" data-arg="${b.id}">${ico("doc", 16)} Receipt</button>`);
   acts.push(`<button class="btn plain" data-act="open" data-arg="report:Booking #${b.id}">${ico("alert", 16)} Report a problem</button>`);
   return { title: `Booking #${b.id}`, html: `
     <div class="card"><div class="row between" style="align-items:flex-start"><div class="t-title">${esc(c.title)}</div>${badge(STATUS[b.status])}</div><div class="hr"></div>
       <div class="info">${ico("cal", 16)}<span>${slot(b)} (${durLbl(b.mins)})</span></div>
-      <div class="info">${ico("pin", 16)}<span>${esc(c.address)}</span></div>
-      <div class="info">${ico("bolt", 16)}<span>${esc(c.connector)} · ${c.kw} kW · ${c.mode === "kwh" ? `${rs(b.unit)}/kWh` : `${rs(b.unit)}/hr`}</span></div>
+      <div class="info">${ico("pin", 16)}<span>${esc(isDriver ? placeLbl(c, b.driver) : c.address)}</span></div>
+      <div class="info">${ico("bolt", 16)}<span>${esc(c.connector)} · ${c.kw} kW · ${c.mode === "kwh" ? `${rs(b.unit)}/kWh` : `${rs(b.unit)}/hr`}${b.extended ? ` · extended ${b.extended} min` : ""}</span></div>
       <div class="info">${ico("user", 16)}<span>${isDriver ? "Host" : "Driver"}: ${esc(other.name)}${shared ? ` · <span class="mono">${esc(other.phone)}</span>` : ""}</span></div>
       ${!isDriver ? `<div class="info">${ico("car", 16)}<span>${VEH[b.vehicle] || ""}${b.note ? " · " + esc(b.note) : ""}</span></div>` : ""}</div>
     ${shared ? `<div class="notice n-green">${ico("key", 16)}<span><b>How to reach the charger:</b> ${esc(c.access)}</span></div>` : ""}
@@ -552,7 +604,9 @@ function scrBooking(id) {
       ${b.kwh != null ? `<div class="small">${b.kwh} kWh used × ${rs(b.unit)}</div>` : ""}
       ${b.refund ? `<div class="row between"><span>Refunded to you${isDriver ? "" : " (driver)"}</span><span class="num">${rs(b.refund, 2)}</span></div>` : ""}
       ${!isDriver && b.earn ? `<div class="row between"><b>You earn</b><b class="num">${rs(b.earn, 2)}</b></div><div class="small">After 10% service fee (${rs(b.fee, 2)})</div>` : ""}
-      ${b.reason ? `<div class="small">Note: ${esc(b.reason)}</div>` : ""}</div>
+      ${b.reason ? `<div class="small">Note: ${esc(b.reason)}</div>` : ""}
+      ${b.extras.map((x) => `<div class="row between"><span class="small">${x.kind === "extension" ? `Extended ${x.minutes} min` : `Overstay fee (${x.minutes} min)`} · ${x.status}</span><span class="small num">${rs(x.amount, 2)}</span></div>`).join("")}
+      ${isDriver ? b.extras.filter((x) => x.status === "due").map((x) => `<button class="btn" data-act="payDue" data-arg="${b.id}:${x.id}">Pay overstay fee ${rs(x.amount)}</button>`).join("") : ""}</div>
     ${acts.join("")}` };
 }
 
@@ -561,9 +615,12 @@ function scrScan(id) {
   return { title: "Scan charger QR", flush: true, html: `
     <div class="cam"><div class="frame"><div class="scanline"></div></div><div class="hint">Point the camera at the QR sticker next to the charger</div></div>
     <div class="list-pad">
-      <button class="btn" data-act="scanOk" data-arg="${b.id}">${ico("camera", 16)} Simulate scanning the QR</button>
+      <div class="card"><div class="t-title">Quick safety check</div><div class="small">Saved with a timestamp. It protects you and the host if anything goes wrong.</div>
+        ${[["cable", "The cable and plug look undamaged"], ["conn", "The connector fits my vehicle"], ["dry", "The socket and floor are dry"]].map(([k, l]) => `<label class="check"><input type="checkbox" data-act="chk" data-arg="${k}" ${UI.checks[k] ? "checked" : ""}> <span>${l}</span></label>`).join("")}
+        <div class="small">Something looks unsafe? Go back and tap "Charger not working" for a full refund.</div></div>
+      <button class="btn" data-act="scanOk" data-arg="${b.id}" ${allChecked() ? "" : "disabled"}>${ico("camera", 16)} Simulate scanning the QR</button>
       <div class="field"><label class="lbl" for="qrIn">Can't scan? Type the code under the QR</label><input id="qrIn" class="mono" placeholder="e.g. ${esc(c.qr)}"></div>
-      <button class="btn sec" data-act="scanCode" data-arg="${b.id}">Check in with code</button>
+      <button class="btn sec" data-act="scanCode" data-arg="${b.id}" ${allChecked() ? "" : "disabled"}>Check in with code</button>
       <div class="small">Hint for the demo: this charger's code is <span class="mono">${esc(c.qr)}</span>.</div>
     </div>` };
 }
@@ -601,7 +658,10 @@ function scrBookings() {
   const up = mine.filter(blocking).sort((a, b) => a.start - b.start);
   const past = mine.filter((b) => !blocking(b)).sort((a, b) => b.start - a.start);
   const list = UI.scope === "upcoming" ? up : past;
+  const myDues = dues(UI.who); const waits = D.waitlist.filter((w) => w.user === UI.who);
   return { title: "My bookings", html: `
+    ${myDues.length ? `<button class="card tap" data-act="open" data-arg="dues"><div class="notice n-red">${ico("alert", 16)}<span>You have ${rs(myDues.reduce((a, x) => a + x.amount, 0))} in pending overstay fees. Tap to pay. New bookings are paused until then.</span></div></button>` : ""}
+    ${waits.length && UI.scope === "upcoming" ? `<div class="card"><div class="lbl">On the waitlist</div>${waits.map((w) => `<div class="small">${esc(charger(w.charger).title)} · ${dayLbl(at(w.day, 0))} · ${w.notified ? `<b style="color:var(--accent-ink)">slot opened! Book now</b>` : "waiting"}</div>`).join("")}</div>` : ""}
     <div class="chips"><button class="chip ${UI.scope === "upcoming" ? "on" : ""}" data-act="scope" data-arg="upcoming">Upcoming (${up.length})</button><button class="chip ${UI.scope === "past" ? "on" : ""}" data-act="scope" data-arg="past">Past (${past.length})</button></div>
     ${list.length ? list.map((b) => bookingRow(b, false)).join("") : `<div class="empty">${ico("cal", 40, 1.6)}<h3>No ${UI.scope} bookings</h3><span>Find a charger near you and book a slot.</span><button class="btn sm" data-act="tab" data-arg="find">Find a charger</button></div>`}` };
 }
@@ -639,8 +699,10 @@ function earnings(uid) {
   const rows = D.bookings.filter((b) => b.host === uid && b.earn > 0);
   const now = new Date();
   const paid = D.payouts.filter((p) => p.host === uid && p.status === "paid").reduce((a, p) => a + p.amount, 0);
-  const pending = rows.filter((b) => !b.payout || D.payouts.find((p) => p.id === b.payout).status !== "paid").reduce((a, b) => a + b.earn, 0);
-  return { total: rows.reduce((a, b) => a + b.earn, 0), month: rows.filter((b) => b.start.getMonth() === now.getMonth() && b.start.getFullYear() === now.getFullYear()).reduce((a, b) => a + b.earn, 0), pending, paid, sessions: rows.filter((b) => b.status === "completed").length, rows };
+  const xs = D.bookings.filter((b) => b.host === uid).flatMap((b) => b.extras.filter((x) => x.earn));
+  const unpaid = (x) => !x.payout || D.payouts.find((p) => p.id === x.payout).status !== "paid";
+  const pending = rows.filter(unpaid).reduce((a, b) => a + b.earn, 0) + xs.filter(unpaid).reduce((a, x) => a + x.earn, 0);
+  return { total: rows.reduce((a, b) => a + b.earn, 0) + xs.reduce((a, x) => a + x.earn, 0), month: rows.filter((b) => b.start.getMonth() === now.getMonth() && b.start.getFullYear() === now.getFullYear()).reduce((a, b) => a + b.earn, 0), pending, paid, sessions: rows.filter((b) => b.status === "completed").length, rows };
 }
 
 function scrEarnings() {
@@ -674,8 +736,9 @@ function scrApply() {
 
 function scrChargerForm(id) {
   const c = id ? charger(id) : null;
-  const v = c || { title: "", address: "", desc: "", access: "", vehicles: ["2W"], connector: "15A socket", kw: 3.3, mode: "hour", price: 3000, open: "07:00", close: "22:00", instant: false, society: false, societyName: "", noc: false, x: 0.3, y: 0.62 };
-  UI.form = UI.form && UI.form.forId === (id || 0) ? UI.form : { forId: id || 0, vehicles: [...v.vehicles], connector: v.connector, mode: v.mode, allDay: v.open === v.close, x: v.x, y: v.y };
+  const v = c || { title: "", address: "", area: "", desc: "", access: "", vehicles: ["2W"], connector: "15A socket", kw: 3.3, mode: "hour", price: 3000, open: "07:00", close: "22:00", instant: false, society: false, societyName: "", noc: false, x: 0.3, y: 0.62, offpeak: null, opS: "22:00", opE: "06:00", idle: 0, community: null };
+  UI.form = UI.form && UI.form.forId === (id || 0) ? UI.form : { forId: id || 0, vehicles: [...v.vehicles], connector: v.connector, mode: v.mode, allDay: v.open === v.close, x: v.x, y: v.y, offpeakOn: !!v.offpeak, community: v.community };
+  const mySocs = Object.values(D.communities).filter((s) => s.status === "approved" && (s.manager === UI.who || memberOf(UI.who, s.id)));
   const F = UI.form;
   const sample = !c && D.users[UI.who].id === "anita";
   return { title: c ? "Edit charger" : "Add your charger", html: `
@@ -690,6 +753,7 @@ function scrChargerForm(id) {
     <button class="btn sec" data-act="toast" data-arg="Uses GPS to drop the pin on your location">${ico("locate", 16)} Use my location</button>
     <div class="small">Tap the map to move the pin to the exact parking spot.</div>
     <div class="field"><label class="lbl" for="cfAddr">Address</label><input id="cfAddr" value="${esc(c ? v.address : sample ? "Flat 102, Sai Residency, Miyapur, Hyderabad" : "")}" placeholder="Flat/house, street, area, city"></div>
+    <div class="field"><label class="lbl" for="cfArea">Area shown on the map</label><input id="cfArea" value="${esc(c ? v.area : sample ? "Miyapur" : "")}" placeholder="e.g. Kondapur"><span class="small">Drivers see only this area and an approximate pin until you confirm their booking.</span></div>
     <div class="field"><label class="lbl" for="cfAccess">Access instructions (shown only after a booking is confirmed)</label><textarea id="cfAccess" placeholder="Gate number, parking slot, who to call…">${esc(c ? v.access : sample ? "Ground floor, slot 6. Call me from the gate." : "")}</textarea></div>
     <div class="sec-h">Charger</div>
     <div class="lbl">Vehicles it can charge</div>
@@ -702,6 +766,13 @@ function scrChargerForm(id) {
     <div class="field"><label class="lbl" for="cfPrice">Price in ₹ per ${F.mode === "kwh" ? "kWh" : "hour"}</label><input id="cfPrice" inputmode="decimal" value="${v.price / 100}">
       <span class="small">${F.mode === "kwh" ? "Typical home tariff is ₹6–9 per unit. Most hosts charge ₹14–20 per kWh." : "Scooters typically ₹20–40/hr, cars ₹80–150/hr."}</span></div>
     <div class="small">ChargeShare keeps a 10% service fee from each booking.</div>
+    <div class="sec-h">Off-peak price (optional)</div>
+    <label class="check"><input type="checkbox" data-act="cfOffpeak" ${F.offpeakOn ? "checked" : ""}> <span>Cheaper rate at night or in solar hours<br><span class="small">Pass on your lower time-of-day electricity rate.</span></span></label>
+    ${F.offpeakOn ? `<div class="field"><label class="lbl" for="cfOpP">Off-peak price in ₹ per ${F.mode === "kwh" ? "kWh" : "hour"}</label><input id="cfOpP" inputmode="decimal" value="${v.offpeak ? v.offpeak / 100 : F.mode === "kwh" ? 12 : 20}"></div>
+      <div class="btns"><div class="field"><label class="lbl" for="cfOpS">From</label><input id="cfOpS" type="time" value="${v.opS}"></div><div class="field"><label class="lbl" for="cfOpE">To</label><input id="cfOpE" type="time" value="${v.opE}"></div></div>` : ""}
+    <div class="sec-h">Overstay fee (optional)</div>
+    <div class="field"><label class="lbl" for="cfIdle">₹ per 15 minutes after the slot ends</label><input id="cfIdle" inputmode="decimal" value="${v.idle / 100}"><span class="small">Charged only after a 15-minute grace period. 0 = no fee.</span></div>
+    ${mySocs.length ? `<div class="sec-h">Housing society</div><div class="chips"><button class="chip ${!F.community ? "on" : ""}" data-act="cfSoc" data-arg="">Open to everyone</button>${mySocs.map((x) => `<button class="chip ${F.community === x.id ? "on" : ""}" data-act="cfSoc" data-arg="${x.id}">Residents of ${esc(x.name)}</button>`).join("")}</div><div class="small">Society chargers are hidden from everyone except approved residents.</div>` : ""}
     <div class="sec-h">Hours</div>
     <label class="check"><input type="checkbox" id="cfAll" ${F.allDay ? "checked" : ""} data-act="cfAll"> <span>Available 24 hours</span></label>
     ${F.allDay ? "" : `<div class="btns"><div class="field"><label class="lbl" for="cfOpen">Opens</label><input id="cfOpen" type="time" value="${v.open === v.close ? "07:00" : v.open}"></div><div class="field"><label class="lbl" for="cfClose">Closes</label><input id="cfClose" type="time" value="${v.open === v.close ? "22:00" : v.close}"></div></div>`}
@@ -719,6 +790,10 @@ function scrManage(id) {
     <div class="card"><div class="row between" style="align-items:flex-start"><div class="t-title">${esc(c.title)}</div>${badge(CSTATUS[c.status])}</div>
       <div class="small">${priceLbl(c)} · ${c.kw} kW · ${esc(c.connector)} · ${hoursLbl(c)}</div>
       ${r ? `<span class="stars">${ico("star", 13)} ${r.toFixed(1)} <span class="small">(${c.reviews.length})</span></span>` : ""}</div>
+    ${(() => { const rl = reliability(c); return `<div class="card"><div class="row between"><span class="t-title">Reliability</span><span class="t-title">${rl.pct == null ? "New" : rl.pct + "%"}</span></div><div class="small">${rl.ok} successful sessions · ${rl.bad} "not working" reports. Two reports in a week take the charger offline automatically until you switch it back on.</div></div>`; })()}
+    <div class="card"><div class="row between"><span class="t-title">${c.offline ? "Temporarily unavailable" : "Accepting bookings"}</span>${badge(c.offline ? ["Offline", "b-red"] : ["Online", "b-green"])}</div>
+      ${c.offline ? `${c.offReason ? `<div class="small">Reason: ${esc(c.offReason)}</div>` : ""}<button class="btn" data-act="offline" data-arg="${c.id}">I've fixed it: go back online</button>`
+        : `<div class="small">Power cut, repairs or need the parking spot? Stop new bookings without removing the listing. Existing bookings stay.</div><div class="field"><label class="lbl" for="offR">Reason (shown to drivers)</label><input id="offR" placeholder="e.g. Electrician visit until Friday"></div><button class="btn sec" data-act="offline" data-arg="${c.id}">Mark temporarily unavailable</button>`}</div>
     ${c.note ? `<div class="notice ${c.status === "rejected" ? "n-red" : "n-blue"}">${ico("info", 16)}<span>From the ChargeShare team: ${esc(c.note)}</span></div>` : ""}
     <div class="card" style="align-items:center;text-align:center"><div class="t-title">Charger QR code</div>
       <div class="small">Print it and stick it next to the charger. Drivers scan it to start charging.</div>
@@ -738,10 +813,71 @@ function scrProfile() {
   return { title: "Profile", html: `
     <div class="card"><div class="t-title" style="font-size:18px">${esc(u.name)}</div><div class="small mono">${esc(u.phone)}</div>
       <div class="row wrap-r">${badge(HSTATUS[u.host])}${u.vehicle ? badge([VEH[u.vehicle], "b-blue"]) : ""}</div></div>
-    <div class="card" style="gap:0">${item("edit", "Edit profile", "editProfile")}<div class="hr"></div>${item("wallet", "Earnings and payouts", "open", "earnings")}<div class="hr"></div>${item("alert", "Report a problem", "open", "report:General")}</div>
+    <div class="card" style="gap:0">${item("edit", "Edit profile", "editProfile")}<div class="hr"></div>${item("wallet", "Earnings and payouts", "open", "earnings")}<div class="hr"></div>${item("home", "My housing society", "open", "society")}<div class="hr"></div>${item("alert", `Pending dues${dues(UI.who).length ? ` (${rs(dues(UI.who).reduce((a, x) => a + x.amount, 0))})` : ""}`, "open", "dues")}<div class="hr"></div>${item("alert", "Report a problem", "open", "report:General")}</div>
     <div class="card" style="gap:0">${item("doc", "Terms of use", "legal", "terms")}<div class="hr"></div>${item("shield", "Privacy policy", "legal", "privacy")}</div>
     <div class="card" style="gap:0">${item("out", "Log out", "logout")}<div class="hr"></div>${item("trash", "Delete my account", "deleteAcct", "", true)}</div>
     <div class="small" style="text-align:center">ChargeShare v1.0.0</div>` };
+}
+
+function scrDues() {
+  const list = dues(UI.who);
+  return { title: "Pending dues", html: `
+    <div class="notice n-blue">${ico("info", 16)}<span>Overstay fees apply when a vehicle stays more than 15 minutes after its slot, so the next driver isn't kept waiting. New bookings are paused until dues are paid.</span></div>
+    ${list.length ? list.map((x) => `<div class="card"><div class="row between"><span class="t-title num">${rs(x.amount)}</span><span class="small">Booking #${x.booking.id}</span></div>
+      <div class="small">Overstay of ${x.minutes} minutes at ${esc(charger(x.booking.charger).title)}</div>
+      <button class="btn" data-act="payDue" data-arg="${x.booking.id}:${x.id}">Pay now</button>
+      <button class="btn plain" data-act="open" data-arg="report:Overstay on booking #${x.booking.id}">Disagree? Report it</button></div>`).join("")
+      : `<div class="empty">${ico("check", 40, 1.6)}<h3>No dues</h3><span>You're all clear.</span></div>`}` };
+}
+
+function myCommunities(uid) { return Object.values(D.communities).filter((c) => c.manager === uid || c.members.some((m) => m.user === uid)); }
+function scrSociety() {
+  const list = myCommunities(UI.who);
+  const mode = UI.socMode || "none";
+  return { title: "Housing society", html: `
+    <div class="notice n-blue">${ico("home", 16)}<span>Share chargers safely inside your apartment complex. Only approved residents see society chargers, and the manager gets a monthly per-flat usage statement for fair cost-sharing.</span></div>
+    ${list.map((c) => { const me = c.members.find((m) => m.user === UI.who); const isMgr = c.manager === UI.who;
+      return `<button class="card tap" ${isMgr ? `data-act="open" data-arg="societyManage:${c.id}"` : ""}><div class="row between"><span class="t-title">${esc(c.name)}</span>${badge(isMgr ? [`Manager · ${c.status}`, c.status === "approved" ? "b-green" : "b-amber"] : [me.status, me.status === "approved" ? "b-green" : "b-amber"])}</div>
+        <div class="small">${esc(c.address)} · ${c.members.filter((m) => m.status === "approved").length} residents · ${D.chargers.filter((x) => x.community === c.id).length} chargers${me ? ` · your flat ${esc(me.flat)}` : ""}</div>
+        ${isMgr ? `<div class="small" style="color:var(--accent-ink)">${c.status === "approved" ? `Join code <b class="mono">${c.code}</b> · ` : ""}Manage residents and statements ›</div>` : ""}</button>`; }).join("")}
+    ${!list.length ? `<div class="small">You're not part of a housing society on ChargeShare yet.</div>` : ""}
+    ${mode === "none" ? `<button class="btn" data-act="socMode" data-arg="join">Join my society</button><button class="btn sec" data-act="socMode" data-arg="create">Register my society (RWA / manager)</button>` : ""}
+    ${mode === "join" ? `<div class="card"><div class="t-title">Join with a code</div>
+      <div class="field"><label class="lbl" for="socCode">Society join code</label><input id="socCode" class="mono" value="LAKE01"></div>
+      <div class="field"><label class="lbl" for="socFlat">Your flat number</label><input id="socFlat" value="C-305"></div>
+      <div class="small">Demo: Lake View Residency's code is LAKE01.</div>
+      <button class="btn" data-act="socJoin">Send request</button><button class="btn plain" data-act="socMode" data-arg="none">Cancel</button></div>` : ""}
+    ${mode === "create" ? `<div class="card"><div class="t-title">Register your society</div>
+      <div class="field"><label class="lbl" for="socName">Society name</label><input id="socName" value="Sai Residency"></div>
+      <div class="field"><label class="lbl" for="socAddr">Address</label><input id="socAddr" value="Miyapur, Hyderabad"></div>
+      <div class="field"><label class="lbl" for="socFlat2">Your flat number</label><input id="socFlat2" value="102"></div>
+      <button class="btn" data-act="socCreate">Submit for verification</button><button class="btn plain" data-act="socMode" data-arg="none">Cancel</button></div>` : ""}` };
+}
+
+function statement(comId) {
+  const com = D.communities[comId]; const now = new Date();
+  const rows = {};
+  D.bookings.filter((b) => b.status === "completed" && charger(b.charger)?.community === comId && b.start.getMonth() === now.getMonth() && b.start.getFullYear() === now.getFullYear())
+    .forEach((b) => { const r = (rows[b.driver] ||= { sessions: 0, kwh: 0, amount: 0 }); r.sessions++; r.kwh += b.kwh ?? charger(b.charger).kw * (b.mins / 60); r.amount += b.final || 0; });
+  return Object.entries(rows).map(([uid, r]) => ({ flat: com.members.find((m) => m.user === uid)?.flat || "—", name: D.users[uid].name, ...r })).sort((a, b) => a.flat.localeCompare(b.flat));
+}
+function scrSocietyManage(id) {
+  const c = D.communities[id]; const pend = c.members.filter((m) => m.status === "pending"); const ok = c.members.filter((m) => m.status === "approved");
+  const st = statement(id);
+  return { title: "Manage society", html: `
+    <div class="card"><div class="t-title">${esc(c.name)}</div><div class="small">${esc(c.address)}</div>
+      ${c.status === "approved" ? `<div class="row between"><span>Join code <b class="mono" style="letter-spacing:2px">${c.code}</b></span><button class="btn sec sm" data-act="toast" data-arg="Code copied. Share it in your society WhatsApp group.">Copy</button></div>` : badge([`Verification ${c.status}`, "b-amber"])}</div>
+    <div class="sec-h">Requests to join (${pend.length})</div>
+    ${pend.length ? pend.map((m) => `<div class="card"><b>${esc(D.users[m.user].name)} · Flat ${esc(m.flat)}</b><div class="small mono">${esc(D.users[m.user].phone)}</div>
+      <div class="btns"><button class="btn" data-act="socDecide" data-arg="${id}:${m.user}:approved">Approve</button><button class="btn danger" data-act="socDecide" data-arg="${id}:${m.user}:rejected">Reject</button></div></div>`).join("") : `<div class="small">No pending requests.</div>`}
+    <div class="sec-h">Residents (${ok.length})</div>
+    <div class="card" style="gap:4px">${ok.map((m) => `<div class="row between"><span>${esc(m.flat)} · ${esc(D.users[m.user].name)}</span>${m.user !== c.manager ? `<button class="btn plain sm" data-act="socDecide" data-arg="${id}:${m.user}:rejected" style="color:var(--red)">Remove</button>` : `<span class="small">manager</span>`}</div>`).join("")}</div>
+    <div class="sec-h">This month's usage statement</div>
+    <div class="card"><table style="font-size:13px"><thead><tr><th>Flat</th><th>Sessions</th><th>kWh</th><th class="money">Paid</th></tr></thead><tbody>
+      ${st.length ? st.map((r) => `<tr><td>${esc(r.flat)}</td><td>${r.sessions}</td><td class="num">${r.kwh.toFixed(1)}</td><td class="money">${rs(r.amount)}</td></tr>`).join("") : `<tr><td colspan="4" class="small">No sessions yet this month.</td></tr>`}
+      </tbody></table>
+      <div class="row between"><b>Total</b><b class="num">${st.reduce((a, r) => a + r.kwh, 0).toFixed(1)} kWh · ${rs(st.reduce((a, r) => a + r.amount, 0))}</b></div>
+      <div class="small">For hourly sessions, energy is estimated from charger power × time. Use this to settle common-meter electricity fairly.</div></div>` };
 }
 
 function screenFor(scr) {
@@ -759,6 +895,9 @@ function screenFor(scr) {
     case "chargerForm": return scrChargerForm(scr.id);
     case "manage": return scrManage(scr.id);
     case "earnings": return scrEarnings();
+    case "dues": return scrDues();
+    case "society": return scrSociety();
+    case "societyManage": return scrSocietyManage(scr.id);
   }
   return { title: "?", html: "" };
 }
@@ -785,10 +924,10 @@ function renderPhone() {
 // ======================================================================
 const STORY = [
   { who: "priya", nav: [{ s: "tab", tab: "find" }], t: "Driver finds a charger", d: "Priya filters for cars and opens a charger on the map.", done: () => UI.seenCharger },
-  { who: "priya", nav: [{ s: "tab", tab: "find" }], t: "Driver books a slot and pays", d: "Pick a day, time and duration, then pay by UPI.", done: () => D.bookings.some((b) => b.driver === "priya" && b.id >= 1005 && b.status !== "pending_payment") },
-  { who: "ravi", nav: [{ s: "tab", tab: "host" }], t: "Host accepts the request", d: "Ravi gets a push notification and taps Accept.", done: () => D.bookings.some((b) => b.driver === "priya" && b.id >= 1005 && ["confirmed", "active", "completed"].includes(b.status)) },
-  { who: "priya", nav: [{ s: "tab", tab: "bookings" }], t: "Driver scans the QR and charges", d: "At the charger, Priya scans the QR sticker to start.", done: () => D.bookings.some((b) => b.driver === "priya" && b.id >= 1005 && ["active", "completed"].includes(b.status)) },
-  { who: "priya", nav: [{ s: "tab", tab: "bookings" }], t: "Driver finishes and rates", d: "Enter the units used. Unused money is refunded.", done: () => D.bookings.some((b) => b.driver === "priya" && b.id >= 1005 && b.status === "completed") },
+  { who: "priya", nav: [{ s: "tab", tab: "find" }], t: "Driver books a slot and pays", d: "Pick a day, time and duration, then pay by UPI.", done: () => D.bookings.some((b) => b.driver === "priya" && b.id >= 1006 && b.status !== "pending_payment") },
+  { who: "ravi", nav: [{ s: "tab", tab: "host" }], t: "Host accepts the request", d: "Ravi gets a push notification and taps Accept.", done: () => D.bookings.some((b) => b.driver === "priya" && b.id >= 1006 && ["confirmed", "active", "completed"].includes(b.status)) },
+  { who: "priya", nav: [{ s: "tab", tab: "bookings" }], t: "Driver scans the QR and charges", d: "At the charger, Priya scans the QR sticker to start.", done: () => D.bookings.some((b) => b.driver === "priya" && b.id >= 1006 && ["active", "completed"].includes(b.status)) },
+  { who: "priya", nav: [{ s: "tab", tab: "bookings" }], t: "Driver finishes and rates", d: "Enter the units used. Unused money is refunded.", done: () => D.bookings.some((b) => b.driver === "priya" && b.id >= 1006 && b.status === "completed") },
   { who: "anita", nav: [{ s: "tab", tab: "host" }], t: "A new host signs up", d: "Anita uploads her ID, adds a UPI ID and lists her charger.", done: () => D.chargers.some((c) => c.host === "anita") },
   { view: "admin", tab: "hosts", t: "Admin approves host and charger", d: "Check the ID and photos, then approve or reject.", done: () => D.users.anita.host === "approved" && D.chargers.some((c) => c.host === "anita" && c.status === "approved") },
   { view: "admin", tab: "payouts", t: "Admin sends weekly payouts", d: "Create payouts, pay each host by UPI, mark paid.", done: () => D.payouts.some((p) => p.status === "paid") },
@@ -796,8 +935,29 @@ const STORY = [
 
 const SCREENS = [
   ["Driver", [["Login with OTP", () => { UI.loggedIn[UI.who] = false; }], ["Find chargers: map", () => { UI.listMode = "map"; UI.nav = [{ s: "tab", tab: "find" }]; }], ["Find chargers: list", () => { UI.listMode = "list"; UI.nav = [{ s: "tab", tab: "find" }]; }], ["Charger details", () => (UI.nav = [{ s: "tab", tab: "find" }, { s: "charger", id: 1 }])], ["Book a slot", () => (UI.nav = [{ s: "tab", tab: "find" }, { s: "charger", id: 1 }, { s: "book", id: 1 }])], ["My bookings", () => (UI.nav = [{ s: "tab", tab: "bookings" }])], ["Booking details", () => (UI.nav = [{ s: "tab", tab: "bookings" }, { s: "booking", id: 1002 }])], ["Rate a session", () => (UI.nav = [{ s: "tab", tab: "bookings" }, { s: "review", id: 1002 }])]], "priya"],
-  ["Host", [["Host dashboard", () => (UI.nav = [{ s: "tab", tab: "host" }])], ["Booking request (accept / decline)", () => (UI.nav = [{ s: "tab", tab: "host" }, { s: "booking", id: 1001 }])], ["Add a charger", () => (UI.nav = [{ s: "tab", tab: "host" }, { s: "chargerForm" }])], ["Manage charger + QR code", () => (UI.nav = [{ s: "tab", tab: "host" }, { s: "manage", id: 1 }])], ["Earnings and payouts", () => (UI.nav = [{ s: "tab", tab: "host" }, { s: "earnings" }])]], "ravi"],
-  ["Account", [["Become a host (ID + UPI)", () => (UI.nav = [{ s: "tab", tab: "host" }, { s: "apply" }])], ["Profile", () => (UI.nav = [{ s: "tab", tab: "profile" }])], ["Report a problem", () => (UI.nav = [{ s: "tab", tab: "profile" }, { s: "report", id: "General" }])]], "anita"],
+  ["Host", [["Host dashboard", () => (UI.nav = [{ s: "tab", tab: "host" }])], ["Booking request (accept / decline)", () => (UI.nav = [{ s: "tab", tab: "host" }, { s: "booking", id: 1001 }])], ["Add a charger", () => (UI.nav = [{ s: "tab", tab: "host" }, { s: "chargerForm" }])], ["Manage charger + QR code", () => (UI.nav = [{ s: "tab", tab: "host" }, { s: "manage", id: 1 }])], ["Earnings and payouts", () => (UI.nav = [{ s: "tab", tab: "host" }, { s: "earnings" }])], ["Society manager: residents + statement", () => (UI.nav = [{ s: "tab", tab: "profile" }, { s: "society" }, { s: "societyManage", id: "lake" }])]], "ravi"],
+  ["Account", [["Become a host (ID + UPI)", () => (UI.nav = [{ s: "tab", tab: "host" }, { s: "apply" }])], ["Profile", () => (UI.nav = [{ s: "tab", tab: "profile" }])], ["Report a problem", () => (UI.nav = [{ s: "tab", tab: "profile" }, { s: "report", id: "General" }])], ["Join a housing society", () => (UI.nav = [{ s: "tab", tab: "profile" }, { s: "society" }])], ["Pending dues", () => (UI.nav = [{ s: "tab", tab: "profile" }, { s: "dues" }])]], "anita"],
+];
+
+const GAPS = [
+  { gap: "84% of sampled public chargers in a Delhi study weren't working; refunds after failed sessions are slow.", fix: "\"Charger not working\" button: instant full refund. Reliability % on every charger. Two reports take it offline automatically.",
+    go: () => { const b = D.bookings.find((x) => x.driver === "priya" && x.status === "confirmed"); UI.view = "app"; UI.who = "priya"; UI.loggedIn.priya = true;
+      if (b) { UI.nav = [{ s: "tab", tab: "bookings" }, { s: "booking", id: b.id }]; UI.broken = b.id; } else { UI.nav = [{ s: "tab", tab: "find" }, { s: "charger", id: 3 }]; toast("Book a slot first, then the button appears on the booking"); } } },
+  { gap: "Drivers juggle many apps, each with its own wallet and minimum balance.", fix: "No wallet: pay each booking by UPI. A receipt for every session.",
+    go: () => { UI.view = "app"; UI.who = "priya"; UI.nav = [{ s: "tab", tab: "bookings" }, { s: "booking", id: 1002 }]; } },
+  { gap: "P2P hosts complain guests overstay; fixed slots are rigid.", fix: "Extend a slot from the app; optional overstay fee after a 15-minute grace period; unpaid dues pause new bookings.",
+    go: () => { UI.view = "app"; UI.who = "priya"; UI.nav = [{ s: "tab", tab: "find" }, { s: "charger", id: 1 }]; toast("Book this charger, check in, then try +30 min and the overstay demo tick-box"); } },
+  { gap: "Hosts don't want their exact home on a public map.", fix: "Map shows the area and an approximate pin; exact address and access notes appear only after the host confirms.",
+    go: () => { UI.view = "app"; UI.who = "karthik"; UI.nav = [{ s: "tab", tab: "find" }, { s: "charger", id: 1 }]; } },
+  { gap: "Hosts can't pass on cheaper night or solar-hour electricity.", fix: "Off-peak price for a time window. The booking total switches rate automatically (☾ marks off-peak start times).",
+    go: () => { UI.view = "app"; UI.who = "priya"; UI.book = null; UI.nav = [{ s: "tab", tab: "find" }, { s: "charger", id: 1 }, { s: "book", id: 1 }]; } },
+  { gap: "Housing societies block chargers and fight over common-meter power.", fix: "Society mode: residents-only chargers, join codes, manager approvals and a monthly per-flat usage statement.",
+    go: () => { UI.view = "app"; UI.who = "ravi"; UI.nav = [{ s: "tab", tab: "profile" }, { s: "society" }, { s: "societyManage", id: "lake" }]; } },
+  { gap: "When a charger is busy, drivers just keep checking.", fix: "Waitlist: \"Notify me if a slot opens\". Plus an \"Available now\" filter for emergencies.",
+    go: () => { UI.view = "app"; UI.who = "karthik"; UI.nowOnly = true; UI.nav = [{ s: "tab", tab: "find" }]; } },
+  { gap: "Damage and fault disputes have no evidence.", fix: "Safety checklist at check-in (cable, connector, dry area), saved with a timestamp and shown to the host.",
+    go: () => { const b = D.bookings.find((x) => x.driver === "priya" && x.status === "confirmed"); UI.view = "app"; UI.who = "priya";
+      if (b) { UI.checks = { cable: false, conn: false, dry: false }; UI.nav = [{ s: "tab", tab: "bookings" }, { s: "booking", id: b.id }, { s: "scan", id: b.id }]; } else { UI.nav = [{ s: "tab", tab: "find" }]; toast("Book and get a booking confirmed first"); } } },
 ];
 
 function renderGuide() {
@@ -809,8 +969,12 @@ function renderGuide() {
       <ol class="steps">${STORY.map((s, i) => `<li class="step ${s.done() ? "done" : ""} ${i === firstOpen ? "cur" : ""}"><span class="n">${s.done() ? ico("check", 14, 3) : i + 1}</span>
         <span><b>${esc(s.t)}</b><span>${esc(s.d)} <i>(${s.view === "admin" ? "Admin panel" : D.users[s.who].name.split(" ")[0]})</i></span></span>
         <button class="btn sec sm" data-act="story" data-arg="${i}">Go</button></li>`).join("")}</ol></div>
+    <div class="panel"><h3>Problems other apps have, and how ChargeShare fixes them</h3>
+      <div class="tbl-wrap"><table><thead><tr><th>What users complain about</th><th>What ChargeShare does</th><th></th></tr></thead><tbody>
+      ${GAPS.map((g, i) => `<tr><td>${esc(g.gap)}</td><td>${esc(g.fix)}</td><td><button class="btn sec sm" data-act="gap" data-arg="${i}">Show</button></td></tr>`).join("")}</tbody></table></div>
+      <div class="small">Sources: IEEFA "EV charging experience in India" (Sep 2026), The Core on wallet overload (Jan 2024), Frontiers in Sustainable Cities P2P host study (2026), Down To Earth on housing-society disputes (2026).</div></div>
     <div class="panel"><h3>Screens in the app</h3><div class="screens">${SCREENS.map(([g, items], gi) => `<div><h4>${g}</h4>${items.map(([l], ii) => `<button data-act="jump" data-arg="${gi}:${ii}">${esc(l)}</button>`).join("")}</div>`).join("")}
-      <div><h4>Admin panel</h4>${[["dash", "Dashboard"], ["hosts", "Host verification"], ["chargers", "Charger approval"], ["bookings", "Bookings, refunds"], ["reports", "Problem reports"], ["payouts", "Payouts"]].map(([k, l]) => `<button data-act="adminJump" data-arg="${k}">${l}</button>`).join("")}</div></div></div>
+      <div><h4>Admin panel</h4>${[["dash", "Dashboard"], ["hosts", "Host verification"], ["chargers", "Charger approval"], ["reliability", "Reliability and fraud"], ["societies", "Housing societies"], ["bookings", "Bookings, refunds"], ["reports", "Problem reports"], ["payouts", "Payouts"]].map(([k, l]) => `<button data-act="adminJump" data-arg="${k}">${l}</button>`).join("")}</div></div></div>
     <div class="panel"><h3>Rules the app enforces</h3><div class="rules">
       <div class="rule"><b>Pricing</b>Per hour (fixed for the slot) or per kWh (driver prepays the maximum; unused units refunded).</div>
       <div class="rule"><b>Service fee</b>ChargeShare keeps 10% of each booking. The host gets 90%, paid weekly by UPI.</div>
@@ -826,12 +990,13 @@ function renderGuide() {
 //  ADMIN PANEL
 // ======================================================================
 function adminCounts() {
-  return { hosts: Object.values(D.users).filter((u) => u.host === "pending").length, chargers: D.chargers.filter((c) => c.status === "pending").length, reports: D.reports.filter((r) => r.status === "open").length, payouts: D.payouts.filter((p) => p.status === "pending").length };
+  return { hosts: Object.values(D.users).filter((u) => u.host === "pending").length, chargers: D.chargers.filter((c) => c.status === "pending").length, reports: D.reports.filter((r) => r.status === "open").length, payouts: D.payouts.filter((p) => p.status === "pending").length,
+    socs: Object.values(D.communities).filter((c) => c.status === "pending").length, flags: flagged().chargers.length + flagged().drivers.length };
 }
 function renderAdmin() {
   const n = adminCounts(); const t = UI.adminTab;
-  const tabs = [["dash", "Dashboard", 0], ["hosts", "Hosts", n.hosts], ["chargers", "Chargers", n.chargers], ["bookings", "Bookings", 0], ["reports", "Reports", n.reports], ["payouts", "Payouts", n.payouts]];
-  const body = { dash: aDash, hosts: aHosts, chargers: aChargers, bookings: aBookings, reports: aReports, payouts: aPayouts }[t]();
+  const tabs = [["dash", "Dashboard", 0], ["hosts", "Hosts", n.hosts], ["chargers", "Chargers", n.chargers], ["reliability", "Reliability", n.flags], ["societies", "Societies", n.socs], ["bookings", "Bookings", 0], ["reports", "Reports", n.reports], ["payouts", "Payouts", n.payouts]];
+  const body = { dash: aDash, hosts: aHosts, chargers: aChargers, reliability: aReliability, societies: aSocieties, bookings: aBookings, reports: aReports, payouts: aPayouts }[t]();
   return `<div class="admin"><nav class="side" aria-label="Admin sections">${tabs.map(([k, l, c]) => `<button class="${t === k ? "on" : ""}" data-act="adminTab" data-arg="${k}"><span>${l}</span>${c ? `<span class="cnt">${c}</span>` : ""}</button>`).join("")}</nav><div style="min-width:0">${body}</div></div>`;
 }
 const head = (h, p, right = "") => `<div class="a-head"><div><h2>${h}</h2><p>${p}</p></div>${right}</div>`;
@@ -843,10 +1008,12 @@ function aDash() {
   const paid = D.bookings.filter((b) => b.final != null);
   const gross = paid.reduce((a, b) => a + (b.final || 0), 0), fee = paid.reduce((a, b) => a + b.fee, 0);
   const pend = D.payouts.filter((p) => p.status === "pending").reduce((a, p) => a + p.amount, 0);
-  const owed = D.bookings.filter((b) => b.earn > 0 && !b.payout).reduce((a, b) => a + b.earn, 0);
+  const owed = D.bookings.filter((b) => b.earn > 0 && !b.payout).reduce((a, b) => a + b.earn, 0) + D.bookings.flatMap((b) => b.extras).filter((x) => x.earn && !x.payout).reduce((a, x) => a + x.earn, 0);
   const tiles = [["Hosts waiting for approval", n.hosts, n.hosts > 0, "hosts"], ["Chargers waiting for approval", n.chargers, n.chargers > 0, "chargers"], ["Open problem reports", n.reports, n.reports > 0, "reports"],
     ["Live chargers", live], ["Users", Object.values(D.users).filter((u) => !u.deleted).length], ["Open bookings", D.bookings.filter((b) => ["requested", "confirmed", "active"].includes(b.status)).length],
-    ["Completed sessions", D.bookings.filter((b) => b.status === "completed").length], ["Gross bookings", rs(gross)], ["Commission earned (10%)", rs(fee)], ["Host earnings not yet in a payout", rs(owed)], ["Payouts to send", rs(pend)]];
+    ["Completed sessions", D.bookings.filter((b) => b.status === "completed").length], ["Gross bookings", rs(gross)], ["Commission earned (10%)", rs(fee)], ["Host earnings not yet in a payout", rs(owed)], ["Payouts to send", rs(pend)],
+    ["Societies waiting for approval", n.socs, n.socs > 0, "societies"], ["Chargers offline", D.chargers.filter((c) => c.offline).length, false, "reliability"],
+    ["'Not working' refunds", D.bookings.filter((b) => b.failed).length, false, "reliability"], ["Unpaid overstay dues", rs(D.bookings.flatMap((b) => b.extras).filter((x) => x.status === "due").reduce((a, x) => a + x.amount, 0))]];
   return head("Dashboard", "Today's work first, then the numbers.") + `<div class="tiles">${tiles.map(([k, v, attn, go]) => `<div class="tile ${attn ? "attn" : ""}" ${go ? `role="button" tabindex="0" data-act="adminTab" data-arg="${go}" style="cursor:pointer"` : ""}><div class="k">${k}</div><div class="v">${v}</div></div>`).join("")}</div>`;
 }
 
@@ -873,9 +1040,12 @@ function aChargers() {
         <dt>Charger type</dt><dd>${esc(c.connector)} · ${c.kw} kW</dd><dt>Vehicles</dt><dd>${c.vehicles.map((v) => VEH[v]).join(", ")}</dd>
         <dt>Charging price</dt><dd>${priceLbl(c)} (${c.mode === "kwh" ? "per unit" : "per hour"})</dd><dt>Hours</dt><dd>${hoursLbl(c)}</dd>
         <dt>Society NOC</dt><dd>${c.noc ? "Yes" : `<span style="color:var(--red)">Not confirmed</span>`}${c.society ? ` · residents of ${esc(c.societyName)}` : ""}</dd>
-        <dt>Safety checked</dt><dd>${c.safety ? "Yes" : "No"}</dd></dl>
+        <dt>Safety checked</dt><dd>${c.safety ? "Yes" : "No"}</dd>
+        <dt>Public area</dt><dd>${esc(c.area || "—")}</dd>
+        <dt>Extras</dt><dd>${c.offpeak ? `Off-peak ${rs(c.offpeak)} ${c.opS}–${c.opE}` : "No off-peak"} · ${c.idle ? `overstay ${rs(c.idle)}/15 min` : "no overstay fee"}${c.community ? ` · society ${esc(D.communities[c.community].name)}` : ""}</dd>
+        <dt>Reliability</dt><dd>${(() => { const r = reliability(c); return `${r.pct == null ? "new" : r.pct + "%"} (${r.ok} ok, ${r.bad} not working)`; })()}${c.offline ? ` · <span style="color:var(--red)">offline</span>` : ""}</dd></dl>
       ${c.note ? `<div class="small">Note: ${esc(c.note)}</div>` : ""}
-      <div class="acts">${c.status !== "approved" ? `<button class="btn sm" data-act="aApproveCharger" data-arg="${c.id}">${ico("check", 14)} Approve</button>` : ""}${c.status !== "rejected" ? `<button class="btn danger sm" data-act="aRejectCharger" data-arg="${c.id}">Reject</button>` : ""}</div></div>`; }).join("")}</div>`
+      <div class="acts">${c.status === "approved" ? `<button class="btn sec sm" data-act="aOffline" data-arg="${c.id}">${c.offline ? "Bring back online" : "Take offline"}</button>` : ""}${c.status !== "approved" ? `<button class="btn sm" data-act="aApproveCharger" data-arg="${c.id}">${ico("check", 14)} Approve</button>` : ""}${c.status !== "rejected" ? `<button class="btn danger sm" data-act="aRejectCharger" data-arg="${c.id}">Reject</button>` : ""}</div></div>`; }).join("")}</div>`
       : `<div class="empty"><h3>Nothing here</h3><span>New and edited listings appear under Waiting.</span></div>`);
 }
 
@@ -886,7 +1056,7 @@ function aBookings() {
     `<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Charger</th><th>Driver → Host</th><th>Slot</th><th>Status</th><th class="money">Paid</th><th class="money">Final</th><th class="money">Refunded</th><th class="money">Fee</th><th class="money">Host gets</th><th></th></tr></thead><tbody>
     ${list.map((b) => `<tr><td class="mono">${b.id}</td><td>${esc(charger(b.charger).title)}<div class="small">${b.mode === "kwh" ? "per kWh" : "per hour"}${b.kwh != null ? ` · ${b.kwh} kWh` : ""}</div></td>
       <td>${esc(D.users[b.driver].name.split(" ")[0])} → ${esc(D.users[b.host].name.split(" ")[0])}</td><td>${slot(b)}</td>
-      <td>${badge(STATUS[b.status])}${b.reason ? `<div class="small">${esc(b.by)}: ${esc(b.reason)}</div>` : ""}</td>
+      <td>${badge(STATUS[b.status])}${b.reason ? `<div class="small">${esc(b.by)}: ${esc(b.reason)}</div>` : ""}${b.extras.map((x) => `<div class="small">${x.kind} ${x.minutes}m · ${rs(x.amount)} · ${x.status}</div>`).join("")}</td>
       <td class="money">${b.status === "pending_payment" ? "—" : rs(b.amount)}</td><td class="money">${b.final != null ? rs(b.final) : "—"}</td><td class="money">${rs(b.refund)}</td><td class="money">${rs(b.fee)}</td><td class="money">${rs(b.earn)}</td>
       <td><div class="acts">${["requested", "confirmed"].includes(b.status) ? `<button class="btn danger sm" data-act="aCancel" data-arg="${b.id}">Cancel</button>` : ""}${b.status !== "pending_payment" && b.amount - b.refund > 0 && !["requested"].includes(b.status) ? `<button class="btn sec sm" data-act="aRefund" data-arg="${b.id}">Refund</button>` : ""}</div></td></tr>`).join("")}
     </tbody></table></div>`;
@@ -903,8 +1073,33 @@ function aReports() {
       : `<div class="empty"><h3>No reports</h3><span>Reports sent from the app appear here.</span></div>`);
 }
 
+function flagged() {
+  const chargers = D.chargers.filter((c) => ["approved", "paused"].includes(c.status)).map((c) => ({ c, r: reliability(c) })).filter(({ r }) => r.bad > 0 && (r.pct == null || r.pct < 90));
+  const claims = {}; D.bookings.filter((b) => b.failed).forEach((b) => (claims[b.driver] = (claims[b.driver] || 0) + 1));
+  const drivers = Object.entries(claims).filter(([, n]) => n >= 3).map(([u, n]) => ({ u, n }));
+  return { chargers, drivers };
+}
+function aReliability() {
+  const f = flagged();
+  return head("Reliability and fraud checks", "Chargers with \"not working\" reports, and drivers who claim refunds unusually often (3 or more).") +
+    `<div class="tbl-wrap"><table><thead><tr><th>Charger</th><th>Host</th><th>Successful</th><th>Not working</th><th>Reliability</th><th>Status</th><th></th></tr></thead><tbody>
+    ${f.chargers.length ? f.chargers.map(({ c, r }) => `<tr><td>${esc(c.title)}</td><td>${esc(D.users[c.host].name)}</td><td>${r.ok}</td><td>${r.bad}</td><td>${r.pct == null ? "new" : r.pct + "%"}</td><td>${badge(c.offline ? ["Offline", "b-red"] : ["Online", "b-green"])}${c.offReason ? `<div class="small">${esc(c.offReason)}</div>` : ""}</td>
+      <td><button class="btn sec sm" data-act="aOffline" data-arg="${c.id}">${c.offline ? "Bring back online" : "Take offline"}</button></td></tr>`).join("") : `<tr><td colspan="7" class="small">All chargers look healthy.</td></tr>`}</tbody></table></div>
+    <h3 style="margin:18px 0 8px">Frequent refund claims</h3>
+    <div class="tbl-wrap"><table><thead><tr><th>Driver</th><th>Phone</th><th>"Not working" claims</th></tr></thead><tbody>
+    ${f.drivers.length ? f.drivers.map(({ u, n }) => `<tr><td>${esc(D.users[u].name)}</td><td class="mono">${esc(D.users[u].phone)}</td><td>${n}</td></tr>`).join("") : `<tr><td colspan="3" class="small">No suspicious patterns.</td></tr>`}</tbody></table></div>`;
+}
+function aSocieties() {
+  const list = Object.values(D.communities);
+  return head("Housing societies", "Verify the person registering is the RWA secretary or facility manager (call the society office) before approving.") +
+    `<div class="tbl-wrap"><table><thead><tr><th>Society</th><th>Address</th><th>Manager</th><th>Residents</th><th>Chargers</th><th>Join code</th><th>Status</th><th></th></tr></thead><tbody>
+    ${list.map((c) => `<tr><td>${esc(c.name)}</td><td>${esc(c.address)}</td><td>${esc(D.users[c.manager].name)}</td><td>${c.members.filter((m) => m.status === "approved").length}</td><td>${D.chargers.filter((x) => x.community === c.id).length}</td>
+      <td class="mono">${esc(c.code)}</td><td>${badge(c.status === "approved" ? ["Approved", "b-green"] : c.status === "pending" ? ["Waiting", "b-amber"] : ["Rejected", "b-red"])}</td>
+      <td><div class="acts">${c.status !== "approved" ? `<button class="btn sm" data-act="aSocDecide" data-arg="${c.id}:approved">Approve</button>` : ""}${c.status !== "rejected" ? `<button class="btn danger sm" data-act="aSocDecide" data-arg="${c.id}:rejected">Reject</button>` : ""}</div></td></tr>`).join("")}</tbody></table></div>`;
+}
+
 function aPayouts() {
-  const owed = D.bookings.filter((b) => b.earn > 0 && !b.payout);
+  const owed = [...D.bookings.filter((b) => b.earn > 0 && !b.payout), ...D.bookings.flatMap((b) => b.extras.filter((x) => x.earn && !x.payout))];
   const f = fval("payouts", "pending");
   const list = D.payouts.filter((p) => f === "all" || p.status === f).sort((a, b) => b.id - a.id);
   return head("Host payouts", "Once a week: group each host's earnings, send the money by UPI, then mark it paid with the transaction reference.",
@@ -941,7 +1136,7 @@ function render() {
 const val = (id) => (document.getElementById(id)?.value ?? "").trim();
 const A = {
   view: (v) => { UI.view = v; render(); window.scrollTo(0, 0); },
-  reset: () => { D = seed(); Object.assign(UI, { who: "priya", nav: [{ s: "tab", tab: "find" }], vfilter: "", listMode: "map", selPin: null, book: null, scope: "upcoming", adminTab: "dash", adminFilter: {}, push: null, seenCharger: false, applyDocs: 0, form: null, reviewStars: 0 }); Object.keys(UI.loggedIn).forEach((k) => (UI.loggedIn[k] = true)); render(); toast("Demo reset to the starting sample data"); },
+  reset: () => { D = seed(); Object.assign(UI, { who: "priya", nav: [{ s: "tab", tab: "find" }], vfilter: "", listMode: "map", selPin: null, book: null, scope: "upcoming", adminTab: "dash", adminFilter: {}, push: null, seenCharger: false, applyDocs: 0, form: null, reviewStars: 0, nowOnly: false, broken: null, checks: { cable: false, conn: false, dry: false }, socMode: "none" }); Object.keys(UI.loggedIn).forEach((k) => (UI.loggedIn[k] = true)); render(); toast("Demo reset to the starting sample data"); },
   tab: (t) => tab(t),
   back: () => back(),
   toast: (m) => toast(m),
@@ -954,6 +1149,8 @@ const A = {
     if (s === "review") UI.reviewStars = 0;
     if (s === "chargerForm") UI.form = null;
     if (s === "apply") UI.applyDocs = 0;
+    if (s === "scan") UI.checks = { cable: false, conn: false, dry: false };
+    if (s === "society") UI.socMode = "none";
     go({ s, id: id || undefined });
   },
   login: () => { UI.loggedIn[UI.who] = true; UI.nav = initialNav(UI.who); render(); },
@@ -966,7 +1163,10 @@ const A = {
   confirmBook: () => {
     const bk = UI.book; const c = charger(bk.c); const start = new Date(bk.start);
     if (!fits(c, start, bk.mins)) { toast("That slot was just taken. Pick another time."); return render(); }
-    const b = { id: D.nextB++, charger: c.id, driver: UI.who, host: c.host, start, mins: bk.mins, status: "pending_payment", mode: c.mode, unit: c.price, amount: estimate(c, bk.mins), final: null, refund: 0, fee: 0, earn: 0, kwh: null, vehicle: bk.vehicle, note: bk.note, reason: "", by: "", payout: null, reviewed: [] };
+    if (dues(UI.who).length) { toast("Pay your pending dues first"); return; }
+    const amount = estimate(c, bk.mins, start);
+    const unit = c.mode === "kwh" ? Math.round(amount / (c.kw * (bk.mins / 60))) : c.price;
+    const b = { id: D.nextB++, charger: c.id, driver: UI.who, host: c.host, start, mins: bk.mins, status: "pending_payment", mode: c.mode, unit, amount, final: null, refund: 0, fee: 0, earn: 0, kwh: null, vehicle: bk.vehicle, note: bk.note, reason: "", by: "", payout: null, reviewed: [], extras: [], failed: false, checklist: null, extended: 0 };
     D.bookings.push(b); log("Booking", `#${b.id} created, waiting for payment (${rs(b.amount)})`);
     UI.nav = [{ s: "tab", tab: "bookings" }, { s: "booking", id: b.id }, { s: "pay", id: b.id }]; render();
   },
@@ -975,16 +1175,16 @@ const A = {
     setTimeout(() => {
       const b = booking(id); const c = charger(b.charger);
       if (b.status !== "pending_payment") return;
-      b.status = c.instant ? "confirmed" : "requested";
+      b.status = c.instant && !c.community ? "confirmed" : "requested";
       log("Payment", `${rs(b.amount)} received for #${b.id} via Razorpay`);
-      if (c.instant) { notify(b.host, "New booking", `${c.title} was booked for ${slot(b)}.`, b.id); notify(b.driver, "Booking confirmed", `${c.title} is booked for you.`, b.id); }
+      if (c.instant && !c.community) { notify(b.host, "New booking", `${c.title} was booked for ${slot(b)}.`, b.id); notify(b.driver, "Booking confirmed", `${c.title} is booked for you.`, b.id); }
       else { notify(b.host, "New booking request", `${me().name.split(" ")[0]} wants to charge at ${c.title}. Accept it in the app.`, b.id); notify(b.driver, "Request sent", "Payment received. Waiting for the host to accept.", b.id); }
       UI.nav = [{ s: "tab", tab: "bookings" }, { s: "booking", id: b.id }]; render();
     }, 900);
   },
   hostAccept: (id) => { const b = booking(id); b.status = "confirmed"; log("Booking", `#${b.id} accepted by host`); notify(b.driver, "Booking confirmed", `${charger(b.charger).title} accepted your booking.`, b.id); render(); toast("Accepted. The driver can now see your address and phone."); },
   hostDecline: (id) => modal({ title: "Decline this request?", text: "The driver gets a full refund.", fields: [{ id: "r", label: "Reason (optional)", value: "Not available at that time" }], ok: "Decline", danger: true,
-    onOk: (v) => { const b = booking(id); b.status = "declined"; b.by = "host"; b.reason = v.r; b.refund = b.amount; log("Refund", `${rs(b.amount)} refunded for #${b.id}`); notify(b.driver, "Booking declined", "The host couldn't take this booking. Full refund issued.", b.id); } }),
+    onOk: (v) => { const b = booking(id); b.status = "declined"; b.by = "host"; b.reason = v.r; b.refund = b.amount; log("Refund", `${rs(b.amount)} refunded for #${b.id}`); notifyWait(b); notify(b.driver, "Booking declined", "The host couldn't take this booking. Full refund issued.", b.id); } }),
   cancelBk: (id) => {
     const b = booking(id); const isDriver = b.driver === UI.who; const mins = (b.start - Date.now()) / 60000;
     const refund = b.status === "pending_payment" ? 0 : isDriver && b.status === "confirmed" && mins < 60 ? Math.floor(b.amount / 2) : b.amount;
@@ -993,7 +1193,7 @@ const A = {
       const wasPaid = b.status !== "pending_payment";
       b.status = "cancelled"; b.by = isDriver ? "driver" : "host"; b.refund = refund;
       const kept = wasPaid ? b.amount - refund : 0; if (kept > 0) settle(b, kept);
-      log("Booking", `#${b.id} cancelled by ${b.by}${refund ? `, ${rs(refund)} refunded` : ""}`);
+      log("Booking", `#${b.id} cancelled by ${b.by}${refund ? `, ${rs(refund)} refunded` : ""}`); notifyWait(b);
       notify(isDriver ? b.host : b.driver, "Booking cancelled", `Booking #${b.id} at ${charger(b.charger).title} was cancelled.`, b.id);
     } });
   },
@@ -1007,6 +1207,13 @@ const A = {
       const final = Math.min(b.amount, Math.ceil(k * b.unit)); b.kwh = k; b.refund = b.amount - final; settle(b, final);
     } else settle(b, b.amount);
     b.status = "completed"; UI.reviewStars = 0;
+    const c = charger(b.charger);
+    if (document.getElementById("lateIn")?.checked && c.idle) {
+      const fee = Math.ceil((40 - 15) / 15) * c.idle;
+      b.extras.push({ id: Date.now(), kind: "overstay", minutes: 40, amount: fee, status: "due" });
+      log("Overstay", `#${b.id}: vehicle stayed 40 min past the slot. Fee ${rs(fee)} due (2 × ${rs(c.idle)} after 15-min grace)`);
+      notify(b.driver, "Overstay fee due", `You stayed 40 min past your slot. ${rs(fee)} is due before your next booking.`, b.id);
+    }
     log("Session", `#${b.id} complete. Final ${rs(b.final, 2)}, refund ${rs(b.refund, 2)}, host earns ${rs(b.earn, 2)}`);
     notify(b.host, "Session complete", `You earned ${rs(b.earn)}.`, b.id); notify(b.driver, "Charging complete", b.refund ? `${rs(b.refund)} for unused units is on its way back.` : "Thanks for charging! Rate your host.", b.id);
     render();
@@ -1042,10 +1249,12 @@ const A = {
     if (!(kw > 0) || !(price > 0)) return toast("Enter the power (kW) and price");
     const data = { title, address, desc: val("cfDesc"), access: val("cfAccess"), vehicles: F.vehicles, connector: F.connector, kw, mode: F.mode, price: Math.round(price * 100),
       open: F.allDay ? "00:00" : val("cfOpen") || "07:00", close: F.allDay ? "00:00" : val("cfClose") || "22:00", instant: document.getElementById("cfInstant").checked,
-      society: document.getElementById("cfSociety").checked, noc: document.getElementById("cfNoc").checked, x: F.x, y: F.y };
+      society: document.getElementById("cfSociety").checked, noc: document.getElementById("cfNoc").checked, x: F.x, y: F.y,
+      area: val("cfArea"), offpeak: F.offpeakOn ? Math.round(Number(val("cfOpP") || 0) * 100) || null : null, opS: F.offpeakOn ? val("cfOpS") || "22:00" : "22:00", opE: F.offpeakOn ? val("cfOpE") || "06:00" : "06:00",
+      idle: Math.round(Number(val("cfIdle") || 0) * 100), community: F.community || null };
     if (data.society) data.instant = false;
     if (id) { const c = charger(id); const reviewed = ["title", "address", "connector", "kw"].some((k) => c[k] !== data[k]) || c.x !== data.x; Object.assign(c, data); if (reviewed && c.status !== "pending") { c.status = "pending"; c.note = "Changes waiting for review"; } log("Charger", `${c.title} updated${reviewed ? ", sent for re-review" : ""}`); toast("Saved"); }
-    else { const c = { ...data, id: D.nextC++, host: UI.who, status: "pending", note: "", reviews: [], photos: 2, safety: false, qr: qrCode(), societyName: data.society ? "My society" : "" }; D.chargers.push(c); log("Charger", `${me().name.split(" ")[0]} submitted "${c.title}" for review`); toast("Submitted. You'll get a notification when it's live."); }
+    else { const c = { ...data, id: D.nextC++, host: UI.who, status: "pending", note: "", reviews: [], photos: 2, safety: false, qr: qrCode(), societyName: data.society ? "My society" : "", offline: false, offReason: "", okSeed: 0, failSeed: 0 }; D.chargers.push(c); log("Charger", `${me().name.split(" ")[0]} submitted "${c.title}" for review`); toast("Submitted. You'll get a notification when it's live."); }
     UI.form = null; UI.nav = [{ s: "tab", tab: "host" }]; render();
   },
   placePin: (_, ev) => { const box = ev.currentTarget.getBoundingClientRect(); UI.form.x = Math.min(0.95, Math.max(0.05, (ev.clientX - box.left) / box.width)); UI.form.y = Math.min(0.95, Math.max(0.1, (ev.clientY - box.top) / box.height)); render(); },
@@ -1083,21 +1292,107 @@ const A = {
   aResolve: (id) => { const r = D.reports.find((x) => x.id === Number(id)); modal({ title: "Reply and resolve", text: esc(r.msg), fields: [{ id: "r", label: "Reply to the user", value: "Thanks for telling us. We've spoken to the host and the socket has been fixed.", type: "area" }], ok: "Send and resolve",
     onOk: (v) => { r.status = "resolved"; r.reply = v.r; log("Admin", `Resolved report #${r.id}`); notify(r.from, "Update on your report", v.r); } }); },
   aGenPayouts: () => {
-    const owed = D.bookings.filter((b) => b.earn > 0 && !b.payout); if (!owed.length) return toast("No new earnings to pay out");
+    const owed = [...D.bookings.filter((b) => b.earn > 0 && !b.payout), ...D.bookings.flatMap((b) => b.extras.filter((x) => x.earn && !x.payout).map((x) => Object.assign(x, { host: b.host })))];
+    if (!owed.length) return toast("No new earnings to pay out");
     const byHost = {}; owed.forEach((b) => (byHost[b.host] ||= []).push(b));
-    Object.entries(byHost).forEach(([h, items]) => { const p = { id: D.nextP++, host: h, amount: items.reduce((a, b) => a + b.earn, 0), count: items.length, upi: D.users[h].upi, status: "pending", ref: "" }; D.payouts.push(p); items.forEach((b) => (b.payout = p.id)); });
+    Object.entries(byHost).forEach(([h, items]) => { const p = { id: D.nextP++, host: h, amount: items.reduce((a, b) => a + b.earn, 0), count: items.filter((x) => x.charger).length, upi: D.users[h].upi, status: "pending", ref: "" }; D.payouts.push(p); items.forEach((b) => (b.payout = p.id)); });
     UI.adminFilter.payouts = "pending"; log("Admin", `Created ${Object.keys(byHost).length} payout(s)`); render(); toast(`Created ${Object.keys(byHost).length} payout(s)`);
   },
   aMarkPaid: (id) => { const p = D.payouts.find((x) => x.id === Number(id)); modal({ title: `Mark ${rs(p.amount, 2)} as paid`, text: `Send it to <b class="mono">${esc(p.upi)}</b> from the business account, then enter the UPI transaction reference (UTR).`, fields: [{ id: "u", label: "UTR / reference", value: "UTR" + Math.floor(100000000 + Math.random() * 899999999) }], ok: "Mark paid",
     onOk: (v) => { if (v.u.length < 3) { toast("Enter the UTR"); return false; } p.status = "paid"; p.ref = v.u; log("Payout", `${rs(p.amount)} paid to ${D.users[p.host].name}`); notify(p.host, "Payout sent", `${rs(p.amount)} sent to ${p.upi}. Ref ${v.u}`); } }); },
+  nowOnly: () => { UI.nowOnly = !UI.nowOnly; UI.selPin = null; render(); },
+  waitlist: (arg) => {
+    const [cid, day] = arg.split(":").map(Number);
+    if (D.waitlist.some((w) => w.user === UI.who && w.charger === cid && w.day === day)) return toast("You're already on the waitlist for this day");
+    D.waitlist.push({ user: UI.who, charger: cid, day, notified: false });
+    log("Waitlist", `${me().name.split(" ")[0]} is waiting for ${charger(cid).title} on ${dayLbl(at(day, 0))}`);
+    toast("You're on the waitlist. We'll notify you if a slot opens."); render();
+  },
+  extend: (arg) => {
+    const [id, m] = arg.split(":").map(Number); const b = booking(id); const c = charger(b.charger);
+    if (endOf(b) < new Date()) return toast("Your slot has already ended");
+    if (!fits(c, endOf(b), m, b.id)) return toast("Someone has booked the next slot, or the charger closes. Can't extend.");
+    const amount = Math.max(100, estimate(c, m, endOf(b)));
+    modal({ title: `Extend by ${m} minutes?`, text: `New end time ${tm(new Date(endOf(b).getTime() + m * 60000))}. You pay ${rs(amount, 2)} for the extra time by UPI.`, ok: `Pay ${rs(amount)}`, onOk: () => {
+      b.extras.push({ id: Date.now(), kind: "extension", minutes: m, amount, status: "paid" });
+      b.mins += m; b.amount += amount; b.extended = (b.extended || 0) + m;
+      if (c.mode === "kwh") b.unit = Math.round(b.amount / (c.kw * (b.mins / 60)));
+      log("Payment", `${rs(amount)} paid to extend #${b.id} by ${m} min`); notify(b.host, "Booking extended", `Booking #${b.id} now ends ${m} minutes later.`, b.id); toast("Extended");
+    } });
+  },
+  payDue: (arg) => {
+    const [bid, xid] = arg.split(":").map(Number); const b = booking(bid); const x = b.extras.find((e) => e.id === xid);
+    modal({ title: `Pay overstay fee ${rs(x.amount)}?`, text: `You stayed ${x.minutes} minutes past your slot at ${esc(charger(b.charger).title)}.`, ok: "Pay by UPI", onOk: () => {
+      x.status = "paid"; x.fee = Math.round(x.amount * COMMISSION); x.earn = x.amount - x.fee;
+      log("Payment", `Overstay fee ${rs(x.amount)} paid for #${b.id}; host gets ${rs(x.earn)}`); notify(b.host, "Overstay fee received", `You earned ${rs(x.earn)} extra for booking #${b.id}.`, b.id); toast("Paid. You can book again.");
+    } });
+  },
+  brokenToggle: () => { const id = Number(cur().id); UI.broken = UI.broken === id ? null : id; render(); },
+  notWorking: (arg) => {
+    const i = arg.indexOf(":"); const b = booking(arg.slice(0, i)); const reason = arg.slice(i + 1); const c = charger(b.charger);
+    modal({ title: "Report charger not working?", text: `"${esc(reason)}". We'll cancel this booking and refund ${rs(b.amount, 2)} in full straight away.`, ok: "Report and refund", danger: true, onOk: () => {
+      b.status = "cancelled"; b.by = "system"; b.reason = "Charger not working: " + reason; b.refund = b.amount; b.failed = true; UI.broken = null;
+      log("Refund", `${rs(b.amount)} refunded instantly for #${b.id} (charger not working)`);
+      notify(b.host, "Driver reported a problem", `Your charger didn't work for booking #${b.id}: ${reason}`, b.id);
+      const recent = D.bookings.filter((x) => x.charger === c.id && x.failed).length;
+      if (recent >= 2 && !c.offline) { c.offline = true; c.offReason = "Reported not working. The host is checking it."; log("Charger", `${c.title} taken offline automatically after ${recent} reports`); notify(c.host, "Charger taken offline", `${c.title} was reported not working ${recent} times. Fix it, then switch it back on.`); }
+      notifyWait(b); toast(`Full refund of ${rs(b.amount)} issued`);
+    } });
+  },
+  chk: (k) => { UI.checks[k] = !UI.checks[k]; render(); },
+  receipt: (id) => {
+    const b = booking(id); const c = charger(b.charger);
+    const row = (k, v) => `<tr><td>${k}</td><td class="money">${v}</td></tr>`;
+    modal({ title: `Receipt #${b.id}`, ok: "Close", onOk: () => {}, extra: `<div class="tbl-wrap"><table>
+      ${row("Charger", esc(c.title))}${row("Slot", slot(b))}${b.extended ? row("Extended by", b.extended + " min") : ""}${b.kwh != null ? row("Energy used", b.kwh + " kWh") : ""}
+      ${row("Paid upfront", rs(b.amount, 2))}${row("Refunded", rs(b.refund, 2))}
+      ${b.extras.filter((x) => x.kind === "overstay").map((x) => row(`Overstay fee (${x.minutes} min, ${x.status})`, rs(x.amount, 2))).join("")}
+      ${b.final != null ? row("Charging cost", rs(b.final, 2)) + row("of which service fee (10%)", rs(b.fee, 2)) + row("of which paid to host", rs(b.earn, 2)) : ""}
+      </table></div><p class="small">Prices include applicable taxes. Payments by Razorpay. The real app opens this as a printable page.</p>` });
+  },
+  offline: (id) => { const c = charger(id); if (c.offline) { c.offline = false; c.offReason = ""; toast("Back online"); } else { c.offline = true; c.offReason = val("offR"); toast("Marked temporarily unavailable"); } log("Charger", `${c.title} is ${c.offline ? "offline" : "back online"}`); render(); },
+  cfOffpeak: () => { UI.form.offpeakOn = !UI.form.offpeakOn; render(); },
+  cfSoc: (id) => { UI.form.community = id || null; render(); },
+  socMode: (m) => { UI.socMode = m; render(); },
+  socJoin: () => {
+    const code = val("socCode").toUpperCase(); const flat = val("socFlat");
+    const c = Object.values(D.communities).find((x) => x.code === code && x.status === "approved");
+    if (!c) return toast("No approved society with that code");
+    if (!flat) return toast("Add your flat number");
+    const m = c.members.find((x) => x.user === UI.who);
+    if (m) { m.status = m.status === "approved" ? "approved" : "pending"; m.flat = flat; } else c.members.push({ user: UI.who, flat, status: "pending" });
+    UI.socMode = "none"; log("Society", `${me().name.split(" ")[0]} asked to join ${c.name} (flat ${flat})`); notify(c.manager, "New resident request", `${me().name} (flat ${flat}) wants to join ${c.name}`); toast("Request sent to the society manager"); render();
+  },
+  socCreate: () => {
+    const name = val("socName"), address = val("socAddr"), flat = val("socFlat2");
+    if (name.length < 3 || address.length < 5 || !flat) return toast("Fill in the name, address and your flat");
+    const id = "soc" + Date.now(); D.communities[id] = { id, name, address, code: qrCode().replace("-", "").slice(0, 6), manager: UI.who, status: "pending", members: [{ user: UI.who, flat, status: "approved" }] };
+    UI.socMode = "none"; log("Society", `${name} registered by ${me().name.split(" ")[0]}, waiting for verification`); toast("Submitted. ChargeShare will verify it."); render();
+  },
+  socDecide: (arg) => {
+    const [id, uid, st] = arg.split(":"); const c = D.communities[id]; const m = c.members.find((x) => x.user === uid); m.status = st;
+    log("Society", `${D.users[uid].name} ${st === "approved" ? "approved" : "removed"} in ${c.name}`);
+    notify(uid, c.name, st === "approved" ? "You're in! Society chargers now show up on your map." : "Your request to join was not approved."); render();
+  },
+  aSocDecide: (arg) => { const [id, st] = arg.split(":"); const c = D.communities[id]; c.status = st; log("Admin", `${st === "approved" ? "Approved" : "Rejected"} society ${c.name}`); notify(c.manager, c.name, st === "approved" ? `Approved! Share join code ${c.code} with residents.` : "Your society was not approved."); render(); },
+  aOffline: (id) => { const c = charger(id); c.offline = !c.offline; c.offReason = c.offline ? "Being checked by the ChargeShare team" : ""; log("Admin", `${c.title} ${c.offline ? "taken offline" : "back online"}`); notify(c.host, "Charger status changed", `${c.title} is now ${c.offline ? "offline" : "back online"}.`); render(); },
+  gap: (i) => { GAPS[Number(i)].go(); render(); window.scrollTo({ top: 0, behavior: "smooth" }); },
   modalClose: () => closeModal(),
   modalOk: () => modalOk(),
 };
 
+function notifyWait(b) {
+  const day = Math.round((new Date(b.start).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 864e5);
+  D.waitlist.filter((w) => w.charger === b.charger && w.day === day && !w.notified && w.user !== b.driver).forEach((w) => {
+    w.notified = true; notify(w.user, "A slot just opened", `${charger(b.charger).title} has a free slot ${dayLbl(b.start).toLowerCase()}. Book it before someone else does.`);
+  });
+}
+const allChecked = () => UI.checks.cable && UI.checks.conn && UI.checks.dry;
 function checkIn(id, code) {
   const b = booking(id); const c = charger(b.charger);
+  if (!allChecked()) return toast("Tick the safety checklist first");
   if (!code || code.replace(/\s/g, "") !== c.qr) return toast("This QR code belongs to a different charger");
-  b.status = "active"; log("Session", `Driver checked in at ${c.title} (#${b.id})`);
+  b.status = "active"; b.checklist = new Date(); log("Session", `Driver checked in at ${c.title} (#${b.id})`);
   notify(b.host, "Driver arrived", `Charging started at ${c.title}.`, b.id);
   UI.nav = [{ s: "tab", tab: "bookings" }, { s: "booking", id: b.id }]; render(); toast("Charging started. Plug in your vehicle.");
 }

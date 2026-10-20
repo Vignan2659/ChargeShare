@@ -4,7 +4,7 @@ import math
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
@@ -13,29 +13,77 @@ from ..models import (
     BookingStatus,
     Charger,
     ChargerStatus,
-    Payment,
+    CommunityMember,
+    ExtraCharge,
     PaymentStatus,
     User,
+    WaitlistEntry,
     utcnow,
 )
 from . import payments, push
-from .timeutil import within_open_hours
+from .timeutil import parse_hhmm, tz, utc_naive_to_aware, within_open_hours
 
 log = logging.getLogger("bookings")
+PAID_STATES = (PaymentStatus.PAID, PaymentStatus.PARTIALLY_REFUNDED)
 
 
 # ---------- pricing ----------
-def estimate_amount(charger: Charger, minutes: int) -> int:
-    hours = minutes / 60
-    if charger.pricing_mode == "kwh":
-        # charge the maximum the charger could deliver; the unused part is refunded at the end
-        return max(100, math.ceil(charger.price_paise * charger.power_kw * hours))
-    return max(100, math.ceil(charger.price_paise * hours))
+def _in_offpeak(local_dt: datetime, charger: Charger) -> bool:
+    if not charger.offpeak_price_paise:
+        return False
+    t, a, b = local_dt.time(), parse_hhmm(charger.offpeak_start), parse_hhmm(charger.offpeak_end)
+    if a == b:
+        return True
+    return a <= t < b if a < b else (t >= a or t < b)
+
+
+def window_price(charger: Charger, start: datetime | None, minutes: int) -> int:
+    """Price (paise) for `minutes` starting at `start` (naive UTC), honouring the off-peak rate in 15-minute steps.
+    Per-kWh chargers are priced at the maximum energy the charger can deliver in that time."""
+    if start is None or not charger.offpeak_price_paise:
+        rate_minutes = [(charger.price_paise, minutes)]
+    else:
+        rate_minutes, cur, left = [], utc_naive_to_aware(start).astimezone(tz()), minutes
+        while left > 0:
+            step = min(15, left)
+            rate_minutes.append((charger.offpeak_price_paise if _in_offpeak(cur, charger) else charger.price_paise, step))
+            cur += timedelta(minutes=step)
+            left -= step
+    factor = charger.power_kw if charger.pricing_mode == "kwh" else 1.0
+    return math.ceil(sum(rate * factor * m / 60 for rate, m in rate_minutes))
+
+
+def estimate_amount(charger: Charger, minutes: int, start: datetime | None = None) -> int:
+    return max(100, window_price(charger, start, minutes))
+
+
+def blended_unit_price(charger: Charger, amount: int, minutes: int) -> int:
+    """For per-kWh bookings: the average price per kWh across the slot (off-peak and normal mixed)."""
+    if charger.pricing_mode != "kwh" or minutes <= 0:
+        return charger.price_paise
+    return max(1, round(amount / (charger.power_kw * minutes / 60)))
 
 
 def split_commission(final_paise: int) -> tuple[int, int]:
     commission = round(final_paise * get_settings().commission_percent / 100)
     return commission, final_paise - commission
+
+
+# ---------- visibility ----------
+def is_member(db: Session, user: User, community_id: int | None) -> bool:
+    if community_id is None:
+        return True
+    return db.scalar(
+        select(CommunityMember.id).where(
+            CommunityMember.community_id == community_id,
+            CommunityMember.user_id == user.id,
+            CommunityMember.status == "approved",
+        )
+    ) is not None
+
+
+def outstanding_dues(db: Session, user: User) -> list[ExtraCharge]:
+    return db.scalars(select(ExtraCharge).where(ExtraCharge.user_id == user.id, ExtraCharge.status == "due")).all()
 
 
 # ---------- validation ----------
@@ -63,8 +111,15 @@ def validate_new_booking(db: Session, charger: Charger, driver: User, start: dat
     now = utcnow()
     if charger.status != ChargerStatus.APPROVED or not charger.host.is_host or charger.host.deleted_at:
         raise HTTPException(400, "This charger is not available right now")
+    if charger.offline:
+        raise HTTPException(400, f"The host marked this charger temporarily unavailable{': ' + charger.offline_reason if charger.offline_reason else ''}")
     if charger.host_id == driver.id:
         raise HTTPException(400, "You can't book your own charger")
+    if not is_member(db, driver, charger.community_id):
+        raise HTTPException(403, "This charger is only for residents of its housing society")
+    dues = outstanding_dues(db, driver)
+    if dues:
+        raise HTTPException(402, f"Please clear your pending dues of ₹{sum(d.amount_paise for d in dues) / 100:.0f} first (Bookings → Dues)")
     if vehicle and charger.vehicle_types and vehicle not in charger.vehicle_types:
         raise HTTPException(400, f"This charger does not support {vehicle} vehicles")
     minutes = int((end - start).total_seconds() // 60)
@@ -80,27 +135,33 @@ def validate_new_booking(db: Session, charger: Charger, driver: User, start: dat
         raise HTTPException(400, f"Charger is open {charger.open_time}–{charger.close_time} only")
     release_stale_unpaid(db)
     if overlapping(db, charger.id, start, end):
-        raise HTTPException(409, "That time slot is already booked. Pick another time.")
+        raise HTTPException(409, "That time slot is already booked. Pick another time, or join the waitlist.")
     return minutes
 
 
-# ---------- state changes ----------
+# ---------- refunds (main payment + paid extensions) ----------
 def _refund(db: Session, booking: Booking, amount: int) -> int:
-    """Refund up to `amount` paise of what the driver paid. Returns the amount refunded."""
-    pay: Payment | None = booking.payment
-    if pay is None or pay.status not in (PaymentStatus.PAID, PaymentStatus.PARTIALLY_REFUNDED):
-        return 0
-    amount = max(0, min(amount, pay.amount_paise - pay.refunded_paise))
-    if amount == 0:
-        return 0
-    refund_id = payments.refund(pay.provider_payment_id or pay.order_id, amount)
-    pay.refunded_paise += amount
-    pay.refund_ids = [*pay.refund_ids, refund_id]
-    pay.status = PaymentStatus.REFUNDED if pay.refunded_paise >= pay.amount_paise else PaymentStatus.PARTIALLY_REFUNDED
-    booking.refund_paise += amount
-    return amount
+    """Refund up to `amount` paise of what the driver prepaid (booking + extensions). Returns the amount refunded."""
+    sources = [x for x in reversed(booking.extras) if x.kind == "extension" and x.status in PAID_STATES]
+    if booking.payment is not None and booking.payment.status in PAID_STATES:
+        sources.append(booking.payment)
+    refunded = 0
+    for src in sources:  # newest extension first, then the main payment
+        if refunded >= amount:
+            break
+        part = max(0, min(amount - refunded, src.amount_paise - src.refunded_paise))
+        if part == 0:
+            continue
+        refund_id = payments.refund(src.provider_payment_id or src.order_id, part)
+        src.refunded_paise += part
+        src.refund_ids = [*src.refund_ids, refund_id]
+        src.status = PaymentStatus.REFUNDED if src.refunded_paise >= src.amount_paise else PaymentStatus.PARTIALLY_REFUNDED
+        refunded += part
+    booking.refund_paise += refunded
+    return refunded
 
 
+# ---------- main state changes ----------
 def mark_paid(db: Session, booking: Booking, provider_payment_id: str) -> Booking:
     """Called once the gateway confirms payment. Safe to call twice (webhook + app)."""
     pay = booking.payment
@@ -130,7 +191,7 @@ def mark_paid(db: Session, booking: Booking, provider_payment_id: str) -> Bookin
         return booking
 
     charger = booking.charger
-    if charger.auto_accept:
+    if charger.auto_accept and not charger.society_only:
         booking.status = BookingStatus.CONFIRMED
         db.commit()
         push.notify(booking.driver, "Booking confirmed", f"{charger.title} is booked for you.", {"bookingId": booking.id})
@@ -157,6 +218,7 @@ def host_respond(db: Session, booking: Booking, accept: bool, reason: str = "") 
         _refund(db, booking, booking.amount_paise)
         db.commit()
         push.notify(booking.driver, "Booking declined", "The host couldn't take this booking. Full refund issued.", {"bookingId": booking.id})
+        notify_waitlist(db, booking)
     return booking
 
 
@@ -166,6 +228,7 @@ def cancel(db: Session, booking: Booking, by: str, reason: str = "") -> Booking:
         booking.status = BookingStatus.CANCELLED
         booking.cancelled_by = by
         db.commit()
+        notify_waitlist(db, booking)
         return booking
     if booking.status not in (BookingStatus.REQUESTED, BookingStatus.CONFIRMED):
         raise HTTPException(400, "This booking can't be cancelled now")
@@ -194,15 +257,25 @@ def cancel(db: Session, booking: Booking, by: str, reason: str = "") -> Booking:
     push.notify(other, "Booking cancelled", f"Booking #{booking.id} at {booking.charger.title} was cancelled.", {"bookingId": booking.id})
     if by != "driver":
         push.notify(booking.driver, "Refund issued", f"₹{refunded / 100:.0f} is on its way back to you.", {"bookingId": booking.id})
+    notify_waitlist(db, booking)
     return booking
 
 
-def check_in(db: Session, booking: Booking, qr_token: str) -> Booking:
+REQUIRED_CHECKS = ("cable_ok", "connector_matches", "area_dry")
+
+
+def check_in(db: Session, booking: Booking, qr_token: str, checklist: dict | None = None) -> Booking:
     s = get_settings()
     if booking.status != BookingStatus.CONFIRMED:
         raise HTTPException(400, "Booking is not confirmed")
     if qr_token.strip() != booking.charger.qr_token:
         raise HTTPException(400, "This QR code belongs to a different charger")
+    checklist = checklist or {}
+    missing = [k for k in REQUIRED_CHECKS if not checklist.get(k)]
+    if missing:
+        raise HTTPException(
+            400, "Complete the safety checklist first. If something looks unsafe, tap 'Charger not working' for a full refund."
+        )
     now = utcnow()
     if now < booking.start_at - timedelta(minutes=s.checkin_early_minutes):
         raise HTTPException(400, f"You can check in from {s.checkin_early_minutes} minutes before your slot")
@@ -210,14 +283,63 @@ def check_in(db: Session, booking: Booking, qr_token: str) -> Booking:
         raise HTTPException(400, "Your slot has already ended")
     booking.status = BookingStatus.ACTIVE
     booking.checked_in_at = now
+    booking.checklist = {**{k: bool(checklist.get(k)) for k in REQUIRED_CHECKS}, "at": now.isoformat(), "note": str(checklist.get("note", ""))[:300]}
     db.commit()
     push.notify(booking.host, "Driver arrived", f"Charging started at {booking.charger.title}.", {"bookingId": booking.id})
     return booking
 
 
+def report_not_working(db: Session, booking: Booking, reason: str) -> Booking:
+    """Driver at the charger says it doesn't work: full refund now; repeated reports take the charger offline."""
+    s = get_settings()
+    if booking.status not in (BookingStatus.CONFIRMED, BookingStatus.ACTIVE):
+        raise HTTPException(400, "You can report this only for a confirmed or active booking")
+    now = utcnow()
+    if now < booking.start_at - timedelta(minutes=s.checkin_early_minutes) or now > booking.end_at + timedelta(minutes=30):
+        raise HTTPException(400, "You can report this only around your slot time. Otherwise use Report a problem.")
+    if booking.status == BookingStatus.ACTIVE and booking.checked_in_at and now - booking.checked_in_at > timedelta(minutes=20):
+        raise HTTPException(400, "Charging has been running for a while. Finish the session, or use Report a problem.")
+    booking.status = BookingStatus.CANCELLED
+    booking.cancelled_by = "system"
+    booking.cancel_reason = f"Charger not working: {reason}"[:300]
+    booking.charger_failed = True
+    refunded = _refund(db, booking, booking.amount_paise)
+    db.commit()
+
+    charger = booking.charger
+    week_ago = now - timedelta(days=7)
+    last_success = db.scalar(
+        select(func.max(Booking.completed_at)).where(
+            Booking.charger_id == charger.id, Booking.status == BookingStatus.COMPLETED, Booking.no_show.is_(False)
+        )
+    )
+    since = max(week_ago, last_success) if last_success else week_ago
+    # failures since the last successful session (looking back at most 7 days)
+    fails = db.scalar(
+        select(func.count()).select_from(Booking).where(
+            Booking.charger_id == charger.id, Booking.charger_failed.is_(True), Booking.start_at >= since - timedelta(hours=1)
+        )
+    )
+    if fails >= s.not_working_auto_offline and not charger.offline:
+        charger.offline = True
+        charger.offline_reason = "Reported not working. The host is checking it."
+        db.commit()
+        push.notify(charger.host, "Charger taken offline", f"{charger.title} was reported not working {fails} times. Fix it, then switch it back on.")
+    push.notify(booking.host, "Driver reported a problem", f"Your charger didn't work for booking #{booking.id}: {reason}", {"bookingId": booking.id})
+    push.notify(booking.driver, "Full refund issued", f"Sorry about that. ₹{refunded / 100:.0f} is on its way back.", {"bookingId": booking.id})
+    notify_waitlist(db, booking)
+    return booking
+
+
 def complete(
-    db: Session, booking: Booking, kwh_used: float | None = None, no_show: bool = False, charge_full: bool = False
+    db: Session,
+    booking: Booking,
+    kwh_used: float | None = None,
+    no_show: bool = False,
+    charge_full: bool = False,
+    by: str = "system",
 ) -> Booking:
+    s = get_settings()
     if booking.status not in (BookingStatus.ACTIVE, BookingStatus.CONFIRMED):
         raise HTTPException(400, "Only an active booking can be completed")
     final = booking.amount_paise
@@ -233,11 +355,138 @@ def complete(
     booking.commission_paise, booking.host_earning_paise = split_commission(final)
     booking.status = BookingStatus.COMPLETED
     booking.no_show = no_show
-    booking.completed_at = utcnow()
+    now = utcnow()
+    booking.completed_at = now
+
+    # overstay: only when a person closes the session late (never for automatic completion)
+    fee = 0
+    charger = booking.charger
+    over = (now - booking.end_at).total_seconds() / 60 - s.overstay_grace_minutes
+    if by in ("driver", "host") and not no_show and charger.idle_fee_paise > 0 and over > 0:
+        blocks = min(s.overstay_max_blocks, math.ceil(over / 15))
+        fee = blocks * charger.idle_fee_paise
+        booking.overstay_minutes = int(over + s.overstay_grace_minutes)
+        db.add(
+            ExtraCharge(
+                booking_id=booking.id, user_id=booking.driver_id, host_id=booking.host_id, kind="overstay",
+                minutes=booking.overstay_minutes, amount_paise=fee, status="due",
+            )
+        )
     db.commit()
-    push.notify(booking.driver, "Charging complete", "Thanks for charging! Rate your host in the app.", {"bookingId": booking.id})
+    msg = "Thanks for charging! Rate your host in the app."
+    if fee:
+        msg = f"You stayed {booking.overstay_minutes} min past your slot. An overstay fee of ₹{fee / 100:.0f} is due."
+    push.notify(booking.driver, "Charging complete", msg, {"bookingId": booking.id})
     push.notify(booking.host, "Session complete", f"You earned ₹{booking.host_earning_paise / 100:.0f}.", {"bookingId": booking.id})
     return booking
+
+
+# ---------- extensions & dues ----------
+def request_extension(db: Session, booking: Booking, minutes: int) -> ExtraCharge:
+    s = get_settings()
+    if minutes not in (15, 30, 45, 60, 90, 120):
+        raise HTTPException(400, "Extend by 15, 30, 45, 60, 90 or 120 minutes")
+    if booking.status not in (BookingStatus.CONFIRMED, BookingStatus.ACTIVE):
+        raise HTTPException(400, "Only a confirmed or active booking can be extended")
+    now = utcnow()
+    if now > booking.end_at:
+        raise HTTPException(400, "Your slot has already ended")
+    total = int((booking.end_at - booking.start_at).total_seconds() // 60) + minutes
+    if total > s.max_booking_minutes:
+        raise HTTPException(400, f"A booking can be at most {s.max_booking_minutes // 60} hours in total")
+    new_end = booking.end_at + timedelta(minutes=minutes)
+    charger = booking.charger
+    if not within_open_hours(booking.end_at, new_end, charger.open_time, charger.close_time):
+        raise HTTPException(400, f"The charger closes at {charger.close_time}")
+    if overlapping(db, charger.id, booking.end_at, new_end, exclude_id=booking.id):
+        raise HTTPException(409, "Someone has booked the next slot, so this booking can't be extended")
+    for x in booking.extras:  # drop older unpaid extension attempts
+        if x.kind == "extension" and x.status == "created":
+            x.status = "cancelled"
+    amount = max(100, window_price(charger, booking.end_at, minutes))
+    extra = ExtraCharge(
+        booking_id=booking.id, user_id=booking.driver_id, host_id=booking.host_id, kind="extension",
+        minutes=minutes, amount_paise=amount, status="created", provider=payments.provider(),
+    )
+    db.add(extra)
+    db.flush()
+    try:
+        extra.order_id = payments.create_order(amount, receipt=f"extra_{extra.id}", notes={"extra_id": str(extra.id)})
+    except payments.PaymentError as e:
+        db.rollback()
+        raise HTTPException(502, str(e))
+    db.commit()
+    return extra
+
+
+def start_dues_payment(db: Session, extra: ExtraCharge) -> ExtraCharge:
+    if extra.status != "due":
+        raise HTTPException(400, "Nothing to pay here")
+    extra.provider = payments.provider()
+    try:
+        extra.order_id = payments.create_order(extra.amount_paise, receipt=f"extra_{extra.id}", notes={"extra_id": str(extra.id)})
+    except payments.PaymentError as e:
+        raise HTTPException(502, str(e))
+    db.commit()
+    return extra
+
+
+def mark_extra_paid(db: Session, extra: ExtraCharge, provider_payment_id: str) -> ExtraCharge:
+    if extra.status in PAID_STATES:
+        return extra
+    booking = extra.booking
+    extra.provider_payment_id = provider_payment_id
+    extra.paid_at = utcnow()
+    if extra.kind == "overstay":
+        extra.status = PaymentStatus.PAID
+        extra.commission_paise, extra.host_earning_paise = split_commission(extra.amount_paise)
+        db.commit()
+        push.notify(booking.host, "Overstay fee received", f"You earned ₹{extra.host_earning_paise / 100:.0f} extra for booking #{booking.id}.")
+        return extra
+
+    # extension: re-check the slot is still free, then lengthen the booking
+    new_end = booking.end_at + timedelta(minutes=extra.minutes)
+    still_ok = (
+        booking.status in (BookingStatus.CONFIRMED, BookingStatus.ACTIVE)
+        and extra.status == "created"
+        and not overlapping(db, booking.charger_id, booking.end_at, new_end, exclude_id=booking.id)
+    )
+    extra.status = PaymentStatus.PAID
+    if not still_ok:
+        db.flush()
+        part = payments.refund(provider_payment_id or extra.order_id, extra.amount_paise)
+        extra.refunded_paise, extra.refund_ids, extra.status = extra.amount_paise, [part], PaymentStatus.REFUNDED
+        db.commit()
+        push.notify(booking.driver, "Extension not possible", "The next slot was taken. Your payment has been refunded.", {"bookingId": booking.id})
+        return extra
+    booking.end_at = new_end
+    booking.amount_paise += extra.amount_paise
+    booking.extended_minutes += extra.minutes
+    if booking.pricing_mode == "kwh":
+        minutes = int((booking.end_at - booking.start_at).total_seconds() // 60)
+        booking.unit_price_paise = blended_unit_price(booking.charger, booking.amount_paise, minutes)
+    db.commit()
+    push.notify(booking.host, "Booking extended", f"Booking #{booking.id} now ends {extra.minutes} minutes later.", {"bookingId": booking.id})
+    return extra
+
+
+# ---------- waitlist ----------
+def notify_waitlist(db: Session, booking: Booking) -> int:
+    """A slot opened up: tell everyone waiting for that charger on that day."""
+    day = utc_naive_to_aware(booking.start_at).astimezone(tz()).strftime("%Y-%m-%d")
+    entries = db.scalars(
+        select(WaitlistEntry).where(
+            WaitlistEntry.charger_id == booking.charger_id, WaitlistEntry.day == day, WaitlistEntry.notified_at.is_(None)
+        )
+    ).all()
+    for e in entries:
+        if e.user_id == booking.driver_id:
+            continue
+        e.notified_at = utcnow()
+        push.notify(e.user, "A slot just opened", f"{booking.charger.title} has a free slot on {day}. Book it before someone else does.", {"chargerId": booking.charger_id})
+    if entries:
+        db.commit()
+    return len(entries)
 
 
 # ---------- background clean-up ----------

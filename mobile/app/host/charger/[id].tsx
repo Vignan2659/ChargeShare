@@ -7,12 +7,13 @@ import { api } from "../../../src/api";
 import { hoursLabel, priceLabel } from "../../../src/format";
 import { space } from "../../../src/theme";
 import type { HostCharger } from "../../../src/types";
-import { Badge, Body, Button, Card, Empty, H2, Loading, Notice, Row, Screen, Small, Stars, useLoad } from "../../../src/ui";
+import { Badge, Body, Button, Card, Empty, Field, H2, Loading, Notice, Row, Screen, Small, Stars, useLoad } from "../../../src/ui";
 
 export default function ManageCharger() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: c, loading, reload, setData, error } = useLoad(() => api<HostCharger>(`/chargers/${id}/manage`), [id]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [offReason, setOffReason] = useState("");
 
   if (loading && !c) return <Loading />;
   if (!c) return <Empty title="Couldn't load charger" text={error ?? ""} />;
@@ -76,6 +77,34 @@ export default function ManageCharger() {
           {priceLabel(c)} · {c.power_kw} kW · {hoursLabel(c.open_time, c.close_time)}
         </Small>
         <Stars value={c.rating_avg} />
+      </Card>
+      <Card>
+        <Row style={{ justifyContent: "space-between" }}>
+          <H2>Reliability</H2>
+          <H2>{c.reliability_pct != null ? `${c.reliability_pct}%` : "New"}</H2>
+        </Row>
+        <Small>
+          {c.sessions_completed} successful sessions · {c.failed_reports} "not working" reports. Two reports in a week take the charger offline
+          automatically until you switch it back on.
+        </Small>
+      </Card>
+      <Card>
+        <Row style={{ justifyContent: "space-between" }}>
+          <H2>{c.offline ? "Temporarily unavailable" : "Accepting bookings"}</H2>
+          <Badge label={c.offline ? "Offline" : "Online"} tone={c.offline ? "red" : "green"} />
+        </Row>
+        {c.offline ? (
+          <>
+            {c.offline_reason ? <Small>Reason: {c.offline_reason}</Small> : null}
+            <Button title="I've fixed it: go back online" onPress={() => patch("offline", { offline: false })} loading={busy === "offline"} />
+          </>
+        ) : (
+          <>
+            <Small>Power cut, repairs or need the parking spot? Stop new bookings without removing your listing. Existing bookings stay.</Small>
+            <Field label="Reason (shown to drivers)" value={offReason} onChangeText={setOffReason} placeholder="e.g. Electrician visit until Friday" />
+            <Button title="Mark temporarily unavailable" variant="secondary" onPress={() => patch("offline", { offline: true, offline_reason: offReason })} loading={busy === "offline"} />
+          </>
+        )}
       </Card>
       {c.admin_note ? <Notice tone={c.status === "rejected" ? "red" : "blue"} text={`From our team: ${c.admin_note}`} /> : null}
 

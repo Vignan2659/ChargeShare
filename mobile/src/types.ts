@@ -37,6 +37,21 @@ export type Charger = {
   rating_avg: number | null;
   rating_count: number;
   host_name: string;
+  // gap-filling features
+  area: string;
+  offpeak_price_paise: number | null;
+  offpeak_start: string;
+  offpeak_end: string;
+  idle_fee_paise: number;
+  offline: boolean;
+  offline_reason: string;
+  community_id: number | null;
+  community_name: string;
+  location_approximate: boolean;
+  reliability_pct: number | null;
+  sessions_completed: number;
+  failed_reports: number;
+  available_now: boolean | null;
 };
 
 export type HostCharger = Charger & {
@@ -85,10 +100,16 @@ export type Booking = {
   created_at: string;
   checked_in_at: string | null;
   completed_at: string | null;
+  checklist: Record<string, unknown>;
+  charger_failed: boolean;
+  extended_minutes: number;
+  overstay_minutes: number;
+  extras: Extra[];
   charger: {
     id: number;
     title: string;
     address: string;
+    area: string;
     lat: number;
     lng: number;
     connector_type: string;
@@ -122,4 +143,45 @@ export type Payout = {
   reference: string;
   created_at: string;
   paid_at: string | null;
+};
+
+export type Extra = {
+  id: number;
+  booking_id: number;
+  kind: "extension" | "overstay";
+  minutes: number;
+  amount_paise: number;
+  status: "created" | "due" | "paid" | "refunded" | "partially_refunded" | "cancelled";
+  refunded_paise: number;
+  created_at: string;
+  paid_at: string | null;
+};
+
+export type ExtraCheckout = { extra: Extra; provider: "mock" | "razorpay"; checkout_url: string };
+
+export type WaitlistEntry = { id: number; charger_id: number; day: string; notified_at: string | null; created_at: string; charger_title: string };
+
+export type Community = {
+  id: number;
+  name: string;
+  address: string;
+  code: string;
+  status: "pending" | "approved" | "rejected";
+  admin_note: string;
+  manager_id: number;
+  created_at: string;
+  role: "manager" | "member" | "";
+  my_status: "pending" | "approved" | "rejected" | "";
+  members_count: number;
+  chargers_count: number;
+};
+
+export type Member = { id: number; user_id: number; flat: string; status: "pending" | "approved" | "rejected"; created_at: string; name: string; phone: string };
+
+export type Statement = {
+  community: string;
+  month: string;
+  rows: { flat: string; name: string; sessions: number; kwh: number; minutes: number; amount_paise: number }[];
+  total_kwh: number;
+  total_amount_paise: number;
 };

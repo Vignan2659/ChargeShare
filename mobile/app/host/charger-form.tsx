@@ -9,7 +9,7 @@ import MapView, { Marker } from "react-native-maps";
 
 import { api, uploadImage } from "../../src/api";
 import { colors, radius, space } from "../../src/theme";
-import type { HostCharger } from "../../src/types";
+import type { Community, HostCharger } from "../../src/types";
 import { Body, Button, ChipGroup, Field, H2, Loading, Notice, Row, Screen, Small, Toggle } from "../../src/ui";
 
 const CONNECTORS = ["15A socket", "Type 2 (AC)", "CCS2 (DC)", "Bharat AC-001", "Bharat DC-001", "LECCS (2W)", "Ather connector", "Other"];
@@ -35,6 +35,13 @@ type Form = {
   society_only: boolean;
   society_name: string;
   has_society_noc: boolean;
+  area: string;
+  offpeak: boolean;
+  offpeak_price: string;
+  offpeak_start: string;
+  offpeak_end: string;
+  idle_fee: string; // rupees per 15 min, "0" = none
+  community_id: number | null;
 };
 
 const EMPTY: Form = {
@@ -57,6 +64,13 @@ const EMPTY: Form = {
   society_only: false,
   society_name: "",
   has_society_noc: false,
+  area: "",
+  offpeak: false,
+  offpeak_price: "12",
+  offpeak_start: "22:00",
+  offpeak_end: "06:00",
+  idle_fee: "0",
+  community_id: null,
 };
 
 export default function ChargerForm() {
@@ -66,8 +80,15 @@ export default function ChargerForm() {
   const [loaded, setLoaded] = useState(!editing);
   const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [societies, setSocieties] = useState<Community[]>([]);
   const mapRef = useRef<MapView>(null);
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((prev) => ({ ...prev, [k]: v }));
+
+  useEffect(() => {
+    api<Community[]>("/communities/mine")
+      .then((list) => setSocieties(list.filter((c) => c.status === "approved" && (c.role === "manager" || c.my_status === "approved"))))
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     if (!editing) {
@@ -83,6 +104,9 @@ export default function ChargerForm() {
           power_kw: String(c.power_kw),
           price: String(c.price_paise / 100),
           allDay: c.open_time === c.close_time,
+          offpeak: !!c.offpeak_price_paise,
+          offpeak_price: c.offpeak_price_paise ? String(c.offpeak_price_paise / 100) : "12",
+          idle_fee: String(c.idle_fee_paise / 100),
         }),
       )
       .catch((e) => Alert.alert("Couldn't load", (e as Error).message))
@@ -131,6 +155,7 @@ export default function ChargerForm() {
     if (!(price > 0)) return Alert.alert("Enter a price");
     if (!(power > 0)) return Alert.alert("Enter the charger power in kW");
     if (!f.allDay && (!HHMM.test(f.open_time) || !HHMM.test(f.close_time))) return Alert.alert("Hours must look like 07:30");
+    if (f.offpeak && (!HHMM.test(f.offpeak_start) || !HHMM.test(f.offpeak_end) || !(Number(f.offpeak_price) > 0))) return Alert.alert("Check the off-peak price and times (like 22:00)");
     if (f.vehicle_types.length === 0) return Alert.alert("Pick at least one vehicle type");
 
     const body = {
@@ -152,6 +177,12 @@ export default function ChargerForm() {
       society_only: f.society_only,
       society_name: f.society_name.trim(),
       has_society_noc: f.has_society_noc,
+      area: f.area.trim(),
+      offpeak_price_paise: f.offpeak ? Math.round(Number(f.offpeak_price.replace(",", ".")) * 100) : editing ? 0 : null,
+      offpeak_start: f.offpeak_start,
+      offpeak_end: f.offpeak_end,
+      idle_fee_paise: Math.round(Number(f.idle_fee.replace(",", ".") || "0") * 100),
+      community_id: f.community_id ?? (editing ? 0 : null),
     };
     setBusy(true);
     try {
@@ -213,6 +244,13 @@ export default function ChargerForm() {
       <Small>Tap the map or drag the pin to the exact parking spot.</Small>
       <Field label="Address" value={f.address} onChangeText={(v) => set("address", v)} placeholder="Flat/house, street, area, city" />
       <Field
+        label="Area shown on the map"
+        value={f.area}
+        onChangeText={(v) => set("area", v)}
+        placeholder="e.g. Kondapur"
+        hint="Drivers see only this area and an approximate pin until you confirm their booking."
+      />
+      <Field
         label="Access instructions (only shown after booking is confirmed)"
         value={f.access_notes}
         onChangeText={(v) => set("access_notes", v)}
@@ -259,6 +297,48 @@ export default function ChargerForm() {
             <Field label="Closes (24h)" value={f.close_time} onChangeText={(v) => set("close_time", v)} placeholder="22:00" maxLength={5} />
           </View>
         </Row>
+      )}
+
+      <H2>Off-peak price (optional)</H2>
+      <Toggle
+        label="Cheaper rate at night or solar hours"
+        hint="Pass on your lower time-of-day electricity rate. Drivers see it when they book."
+        value={f.offpeak}
+        onChange={(v) => set("offpeak", v)}
+      />
+      {f.offpeak && (
+        <>
+          <Field label={`Off-peak price in ₹ per ${f.pricing_mode === "kwh" ? "kWh" : "hour"}`} value={f.offpeak_price} onChangeText={(v) => set("offpeak_price", v)} keyboardType="decimal-pad" />
+          <Row>
+            <View style={{ flex: 1 }}>
+              <Field label="From (24h)" value={f.offpeak_start} onChangeText={(v) => set("offpeak_start", v)} maxLength={5} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Field label="To (24h)" value={f.offpeak_end} onChangeText={(v) => set("offpeak_end", v)} maxLength={5} />
+            </View>
+          </Row>
+        </>
+      )}
+
+      <H2>Overstay fee (optional)</H2>
+      <Field
+        label="₹ per 15 minutes after the slot ends"
+        value={f.idle_fee}
+        onChangeText={(v) => set("idle_fee", v)}
+        keyboardType="decimal-pad"
+        hint="Charged only if a car stays more than 15 minutes past its slot. 0 = no fee."
+      />
+
+      {societies.length > 0 && (
+        <>
+          <H2>Housing society</H2>
+          <ChipGroup
+            options={[{ label: "Open to everyone", value: "0" }, ...societies.map((c) => ({ label: `Residents of ${c.name}`, value: String(c.id) }))]}
+            value={String(f.community_id ?? 0)}
+            onChange={(v) => set("community_id", v === "0" ? null : Number(v))}
+          />
+          <Small>Society chargers are hidden from everyone except approved residents.</Small>
+        </>
       )}
 
       <H2>Booking rules</H2>

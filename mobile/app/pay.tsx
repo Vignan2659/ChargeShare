@@ -12,7 +12,13 @@ import { Body, Button, H2, Loading, Notice, Screen } from "../src/ui";
 /** Razorpay checkout runs inside a WebView page served by our backend. When it finishes, the page
  * navigates to chargeshare://payment-result?... which we catch here. Test mode shows a simple button. */
 export default function Pay() {
-  const { bookingId, provider, url, amount } = useLocalSearchParams<{ bookingId: string; provider: string; url: string; amount: string }>();
+  const { bookingId, extraId, provider, url, amount } = useLocalSearchParams<{
+    bookingId: string;
+    extraId?: string;
+    provider: string;
+    url: string;
+    amount: string;
+  }>();
   const [busy, setBusy] = useState(false);
   const handled = useRef(false);
 
@@ -21,7 +27,7 @@ export default function Pay() {
     handled.current = true;
     try {
       const b = await api<Booking>(`/payments/${bookingId}/sync`, { method: "POST" });
-      if (b.status === "pending_payment") {
+      if (!extraId && b.status === "pending_payment") {
         Alert.alert(
           status === "cancelled" ? "Payment cancelled" : "Payment not completed",
           "Your slot is held for 15 minutes. Open the booking to try again.",
@@ -36,7 +42,7 @@ export default function Pay() {
   async function mockPay() {
     setBusy(true);
     try {
-      await api(`/payments/${bookingId}/mock-pay`, { method: "POST" });
+      await api(extraId ? `/payments/extra/${extraId}/mock-pay` : `/payments/${bookingId}/mock-pay`, { method: "POST" });
       router.replace(`/booking/${bookingId}`);
     } catch (e) {
       Alert.alert("Payment failed", (e as Error).message);

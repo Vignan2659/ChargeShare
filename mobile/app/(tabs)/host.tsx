@@ -105,6 +105,7 @@ export default function Host() {
               <Row style={{ justifyContent: "space-between" }}>
                 <Text style={{ flex: 1, fontSize: 16, fontWeight: "700", color: colors.text }}>{c.title}</Text>
                 <Badge label={CHARGER_STATUS[c.status].label} tone={CHARGER_STATUS[c.status].tone} />
+                {c.offline && <Badge label="Offline" tone="red" />}
               </Row>
               <Small>
                 {priceLabel(c)} · {c.power_kw} kW · {c.connector_type}

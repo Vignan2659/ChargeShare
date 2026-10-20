@@ -42,3 +42,6 @@ td.msg { max-width: 420px; white-space: pre-wrap; }
 .photos { display: flex; gap: 6px; overflow-x: auto; }
 .photos img { height: 90px; border-radius: 8px; }
 .login { max-width: 360px; margin: 12vh auto; display: flex; flex-direction: column; gap: 12px; background: #fff; padding: 32px; border-radius: 16px; border: 1px solid var(--border); }
+.pill-offline { background: var(--red-soft); color: var(--red); }
+.pill-online { background: var(--green-soft); color: var(--green-dark); }
+h3 { margin: 12px 0 8px; }

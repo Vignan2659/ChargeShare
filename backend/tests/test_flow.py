@@ -51,6 +51,8 @@ def slot(hours_from_now=3, length=2):
     return iso(base), iso(base + timedelta(hours=length))
 
 
+CHECKS = {"cable_ok": True, "connector_matches": True, "area_dry": True}
+
 CHARGER = {
     "title": "Test Villa Charger",
     "address": "Road 1, Gachibowli, Hyderabad",
@@ -141,7 +143,7 @@ def test_full_booking_flow(client, world):
 
     # too early to check in (slot starts in 3h)
     qr = client.get(f"/chargers/{cid}/manage", headers=host).json()["qr_token"]
-    assert client.post(f"/bookings/{b['id']}/check-in", json={"qr_token": qr}, headers=driver).status_code == 400
+    assert client.post(f"/bookings/{b['id']}/check-in", json={"qr_token": qr, "checklist": CHECKS}, headers=driver).status_code == 400
 
 
 def _make_confirmed(client, world, hours_from_now, length=1, mode=None):
@@ -180,7 +182,7 @@ def test_checkin_and_complete_hourly(client, world):
     _shift_to_now(bid)
     qr = client.get(f"/chargers/{world['charger']['id']}/manage", headers=world["host"]).json()["qr_token"]
     assert client.post(f"/bookings/{bid}/check-in", json={"qr_token": "wrong"}, headers=world["driver"]).status_code == 400
-    b = client.post(f"/bookings/{bid}/check-in", json={"qr_token": qr}, headers=world["driver"]).json()
+    b = client.post(f"/bookings/{bid}/check-in", json={"qr_token": qr, "checklist": CHECKS}, headers=world["driver"]).json()
     assert b["status"] == "active"
     b = client.post(f"/bookings/{bid}/complete", json={}, headers=world["driver"]).json()
     assert b["status"] == "completed"
@@ -196,7 +198,7 @@ def test_per_kwh_refund(client, world):
     bid = _make_confirmed(client, world, 40, length=2, mode="kwh")
     _shift_to_now(bid)
     qr = client.get(f"/chargers/{world['charger']['id']}/manage", headers=world["host"]).json()["qr_token"]
-    client.post(f"/bookings/{bid}/check-in", json={"qr_token": qr}, headers=world["driver"])
+    client.post(f"/bookings/{bid}/check-in", json={"qr_token": qr, "checklist": CHECKS}, headers=world["driver"])
     # ₹100/kWh × 7.4kW × 2h = ₹1480 prepaid; used 5 kWh = ₹500
     b = client.post(f"/bookings/{bid}/complete", json={"kwh_used": 5}, headers=world["host"]).json()
     assert b["amount_paise"] == 148000
@@ -269,3 +271,168 @@ def test_reports_and_delete_account(client, world):
     extra = login(client, "9000000009", "Temp")
     assert client.delete("/me", headers=extra).status_code == 200
     assert client.get("/me", headers=extra).status_code == 401
+
+
+# =====================================================================
+#  Gap-filling features (run after the payout test above, same database)
+# =====================================================================
+from zoneinfo import ZoneInfo  # noqa: E402
+
+IST = ZoneInfo("Asia/Kolkata")
+C2 = {**CHARGER, "title": "Kondapur Night Saver", "address": "Flat 9, Secret Lane, Kondapur", "area": "Kondapur",
+      "lat": 17.4622, "lng": 78.3568, "auto_accept": True, "offpeak_price_paise": 5000, "offpeak_start": "22:00",
+      "offpeak_end": "06:00", "idle_fee_paise": 2000, "access_notes": "Basement B1"}
+
+
+def _now_slot(minutes=60, offset_min=1):
+    s = datetime.now(timezone.utc).replace(second=0, microsecond=0) + timedelta(minutes=offset_min)
+    return iso(s), iso(s + timedelta(minutes=minutes))
+
+
+@pytest.fixture(scope="module")
+def w2(client, world):
+    admin = world["admin"]
+    host = login(client, "9100000002", "Meera")
+    driver = login(client, "9100000003", "Arjun")
+    up = client.post("/uploads", files={"file": ("id.png", b"\x89PNG", "image/png")}, data={"kind": "id_doc"}, headers=host).json()
+    client.post("/me/host-application", json={"id_doc_keys": [up["key"]], "payout_upi": "meera@okicici"}, headers=host)
+    host_id = client.get("/me", headers=host).json()["id"]
+    client.post(f"/admin/hosts/{host_id}/approve", headers=admin)
+    c = client.post("/chargers", json=C2, headers=host).json()
+    client.post(f"/admin/chargers/{c['id']}/approve", json={"safety_checked": True}, headers=admin)
+    return {"admin": admin, "host": host, "driver": driver, "cid": c["id"], "other": world["driver"]}
+
+
+def test_offpeak_pricing(client, w2):
+    day = (datetime.now(IST) + timedelta(days=2)).date()
+    def quote(h, m, mins):
+        s = datetime(day.year, day.month, day.day, h, m, tzinfo=IST)
+        return client.post("/bookings/quote", json={"charger_id": w2["cid"], "start_at": s.isoformat(), "end_at": (s + timedelta(minutes=mins)).isoformat()}, headers=w2["driver"]).json()
+    assert quote(23, 0, 60)["amount_paise"] == 5000  # all off-peak
+    assert quote(12, 0, 60)["amount_paise"] == 10000  # all normal
+    assert quote(21, 30, 60)["amount_paise"] == 7500  # half and half
+
+
+def test_location_privacy(client, w2):
+    res = client.get("/chargers?lat=17.46&lng=78.356&radius_km=3", headers=w2["driver"]).json()
+    c = next(x for x in res if x["id"] == w2["cid"])
+    assert c["location_approximate"] is True and c["address"] == "Kondapur"
+    assert (c["lat"], c["lng"]) != (17.4622, 78.3568)
+    mine = client.get("/chargers/mine", headers=w2["host"]).json()[0]
+    assert mine["address"] == C2["address"] and mine["lat"] == 17.4622
+
+
+def test_available_now_filter(client, w2):
+    q = "/chargers?lat=17.46&lng=78.356&radius_km=3&available_now=true"
+    assert any(x["id"] == w2["cid"] for x in client.get(q, headers=w2["driver"]).json())
+    s, e = _now_slot(60)
+    b = client.post("/bookings", json={"charger_id": w2["cid"], "start_at": s, "end_at": e}, headers=w2["driver"]).json()["booking"]
+    client.post(f"/payments/{b['id']}/mock-pay", headers=w2["driver"])
+    assert not any(x["id"] == w2["cid"] for x in client.get(q, headers=w2["driver"]).json())
+    client.post(f"/bookings/{b['id']}/cancel", json={}, headers=w2["driver"])  # free the slot again
+
+
+def test_not_working_refund_and_auto_offline(client, w2):
+    for i in range(2):
+        s, e = _now_slot(60)
+        r = client.post("/bookings", json={"charger_id": w2["cid"], "start_at": s, "end_at": e}, headers=w2["driver"])
+        assert r.status_code == 201, r.text
+        b = client.post(f"/payments/{r.json()['booking']['id']}/mock-pay", headers=w2["driver"]).json()
+        assert b["status"] == "confirmed"  # instant booking
+        b = client.post(f"/bookings/{b['id']}/not-working", json={"reason": "No power at the socket"}, headers=w2["driver"]).json()
+        assert b["status"] == "cancelled" and b["charger_failed"] is True and b["refund_paise"] == b["amount_paise"]
+    c = client.get(f"/chargers/{w2['cid']}/manage", headers=w2["host"]).json()
+    assert c["offline"] is True and c["failed_reports"] == 2
+    s, e = _now_slot(60)
+    assert client.post("/bookings", json={"charger_id": w2["cid"], "start_at": s, "end_at": e}, headers=w2["driver"]).status_code == 400
+    assert any(f["charger_id"] == w2["cid"] for f in client.get("/admin/flags", headers=w2["admin"]).json()["unreliable_chargers"])
+    client.patch(f"/chargers/{w2['cid']}", json={"offline": False}, headers=w2["host"])  # host fixed it
+
+
+def test_checklist_extension_overstay_and_dues(client, w2):
+    from app.db import SessionLocal
+    from app.models import Booking, utcnow
+
+    s, e = _now_slot(60)
+    b = client.post("/bookings", json={"charger_id": w2["cid"], "start_at": s, "end_at": e}, headers=w2["driver"]).json()["booking"]
+    client.post(f"/payments/{b['id']}/mock-pay", headers=w2["driver"])
+    qr = client.get(f"/chargers/{w2['cid']}/manage", headers=w2["host"]).json()["qr_token"]
+    # checklist is required
+    assert client.post(f"/bookings/{b['id']}/check-in", json={"qr_token": qr}, headers=w2["driver"]).status_code == 400
+    b = client.post(f"/bookings/{b['id']}/check-in", json={"qr_token": qr, "checklist": CHECKS}, headers=w2["driver"]).json()
+    assert b["status"] == "active" and b["checklist"]["cable_ok"] is True
+
+    # extend by 30 min
+    x = client.post(f"/bookings/{b['id']}/extend", json={"minutes": 30}, headers=w2["driver"]).json()
+    assert x["extra"]["kind"] == "extension" and x["provider"] == "mock"
+    client.post(f"/payments/extra/{x['extra']['id']}/mock-pay", headers=w2["driver"])
+    b2 = client.get(f"/bookings/{b['id']}", headers=w2["driver"]).json()
+    assert b2["extended_minutes"] == 30 and b2["amount_paise"] == b["amount_paise"] + x["extra"]["amount_paise"]
+
+    # driver leaves 40 minutes late; host closes the session -> overstay fee (40 - 15 grace = 25 min = 2 blocks)
+    with SessionLocal() as db:
+        bk = db.get(Booking, b["id"])
+        bk.end_at = utcnow() - timedelta(minutes=40)
+        db.commit()
+    done = client.post(f"/bookings/{b['id']}/complete", json={}, headers=w2["host"]).json()
+    assert done["status"] == "completed" and done["overstay_minutes"] >= 40
+    dues = client.get("/payments/dues", headers=w2["driver"]).json()
+    assert len(dues) == 1 and dues[0]["amount_paise"] == 4000
+    s, e = _now_slot(60, offset_min=120)
+    assert client.post("/bookings", json={"charger_id": w2["cid"], "start_at": s, "end_at": e}, headers=w2["driver"]).status_code == 402
+    co = client.post(f"/payments/extra/{dues[0]['id']}/checkout", headers=w2["driver"]).json()
+    assert client.post(f"/payments/extra/{co['extra']['id']}/mock-pay", headers=w2["driver"]).json()["status"] == "paid"
+    assert client.get("/payments/dues", headers=w2["driver"]).json() == []
+    e2 = client.get("/me/earnings", headers=w2["host"]).json()
+    assert e2["pending_payout_paise"] >= 3600  # 90% of the ₹40 overstay fee is the host's
+
+    # receipt
+    link = client.get(f"/bookings/{b['id']}/receipt-link", headers=w2["driver"]).json()["url"]
+    page = client.get(link.split("8000", 1)[-1] if "8000" in link else link)
+    assert page.status_code == 200 and "Receipt" in page.text and "Overstay" in page.text
+
+
+def test_waitlist_notifies_when_slot_opens(client, w2):
+    day = (datetime.now(IST) + timedelta(days=3)).date()
+    start = datetime(day.year, day.month, day.day, 10, 0, tzinfo=IST)
+    body = {"charger_id": w2["cid"], "start_at": start.isoformat(), "end_at": (start + timedelta(hours=1)).isoformat()}
+    b = client.post("/bookings", json=body, headers=w2["other"]).json()["booking"]
+    client.post(f"/payments/{b['id']}/mock-pay", headers=w2["other"])
+    assert client.post("/bookings", json=body, headers=w2["driver"]).status_code == 409
+    assert client.post(f"/chargers/{w2['cid']}/waitlist", json={"day": day.isoformat()}, headers=w2["driver"]).status_code == 201
+    client.post(f"/bookings/{b['id']}/cancel", json={}, headers=w2["other"])
+    w = client.get("/chargers/waitlist/mine", headers=w2["driver"]).json()
+    assert w[0]["notified_at"] is not None
+
+
+def test_housing_society(client, w2):
+    admin, manager, resident, outsider = w2["admin"], w2["host"], w2["driver"], w2["other"]
+    com = client.post("/communities", json={"name": "Green Meadows", "address": "Kondapur, Hyderabad", "manager_flat": "A-101"}, headers=manager).json()
+    assert com["status"] == "pending" and com["code"]
+    assert client.post("/communities/join", json={"code": com["code"], "flat": "B-202"}, headers=resident).status_code == 404  # not approved yet
+    client.post(f"/admin/communities/{com['id']}/approve", json={}, headers=admin)
+    client.post("/communities/join", json={"code": com["code"], "flat": "B-202"}, headers=resident)
+    members = client.get(f"/communities/{com['id']}/members", headers=manager).json()
+    pending = next(m for m in members if m["status"] == "pending")
+    client.post(f"/communities/{com['id']}/members/{pending['id']}/approve", headers=manager)
+
+    c3 = client.post("/chargers", json={**CHARGER, "title": "Green Meadows Basement", "lat": 17.47, "lng": 78.36, "community_id": com["id"]}, headers=manager).json()
+    client.post(f"/admin/chargers/{c3['id']}/approve", json={}, headers=admin)
+    q = "/chargers?lat=17.47&lng=78.36&radius_km=2"
+    assert any(x["id"] == c3["id"] for x in client.get(q, headers=resident).json())
+    assert not any(x["id"] == c3["id"] for x in client.get(q, headers=outsider).json())
+    assert client.get(f"/chargers/{c3['id']}", headers=outsider).status_code == 404
+
+    # resident charges once -> appears on the monthly per-flat statement
+    bid = None
+    s, e = _now_slot(60)
+    bid = client.post("/bookings", json={"charger_id": c3["id"], "start_at": s, "end_at": e}, headers=resident).json()["booking"]["id"]
+    client.post(f"/payments/{bid}/mock-pay", headers=resident)
+    client.post(f"/bookings/{bid}/accept", headers=manager)
+    qr = client.get(f"/chargers/{c3['id']}/manage", headers=manager).json()["qr_token"]
+    client.post(f"/bookings/{bid}/check-in", json={"qr_token": qr, "checklist": CHECKS}, headers=resident)
+    client.post(f"/bookings/{bid}/complete", json={}, headers=resident)
+    st = client.get(f"/communities/{com['id']}/statement", headers=manager).json()
+    row = next(r for r in st["rows"] if r["flat"] == "B-202")
+    assert row["sessions"] == 1 and row["amount_paise"] == 10000 and row["kwh"] == 7.4
+    assert client.get(f"/communities/{com['id']}/statement", headers=resident).status_code == 404  # manager only

@@ -131,6 +131,12 @@ class ChargerBase(BaseModel):
     society_only: bool = False
     society_name: str = Field(default="", max_length=160)
     has_society_noc: bool = False
+    area: str = Field(default="", max_length=120)
+    offpeak_price_paise: int | None = Field(default=None, ge=0, le=1_000_000)
+    offpeak_start: str = "22:00"
+    offpeak_end: str = "06:00"
+    idle_fee_paise: int = Field(default=0, ge=0, le=100_000)
+    community_id: int | None = None
 
     @field_validator("vehicle_types")
     @classmethod
@@ -147,7 +153,7 @@ class ChargerBase(BaseModel):
     def _pm(cls, v):
         return _check_pricing_mode(v)
 
-    @field_validator("open_time", "close_time")
+    @field_validator("open_time", "close_time", "offpeak_start", "offpeak_end")
     @classmethod
     def _hhmm(cls, v):
         return _check_hhmm(v)
@@ -177,6 +183,14 @@ class ChargerUpdate(BaseModel):
     society_name: str | None = Field(default=None, max_length=160)
     has_society_noc: bool | None = None
     paused: bool | None = None
+    area: str | None = Field(default=None, max_length=120)
+    offpeak_price_paise: int | None = Field(default=None, ge=0, le=1_000_000)  # 0 removes off-peak pricing
+    offpeak_start: str | None = None
+    offpeak_end: str | None = None
+    idle_fee_paise: int | None = Field(default=None, ge=0, le=100_000)
+    community_id: int | None = Field(default=None, ge=0)  # 0 removes the community restriction
+    offline: bool | None = None
+    offline_reason: str | None = Field(default=None, max_length=200)
 
     @field_validator("vehicle_types")
     @classmethod
@@ -193,7 +207,7 @@ class ChargerUpdate(BaseModel):
     def _pm(cls, v):
         return v if v is None else _check_pricing_mode(v)
 
-    @field_validator("open_time", "close_time")
+    @field_validator("open_time", "close_time", "offpeak_start", "offpeak_end")
     @classmethod
     def _hhmm(cls, v):
         return v if v is None else _check_hhmm(v)
@@ -220,10 +234,24 @@ class ChargerOut(ORM):
     society_name: str
     safety_checked: bool
     status: str
+    area: str = ""
+    offpeak_price_paise: int | None = None
+    offpeak_start: str = "22:00"
+    offpeak_end: str = "06:00"
+    idle_fee_paise: int = 0
+    offline: bool = False
+    offline_reason: str = ""
+    community_id: int | None = None
+    community_name: str = ""
+    location_approximate: bool = False  # true until the viewer has a confirmed booking
     distance_km: float | None = None
     rating_avg: float | None = None
     rating_count: int = 0
     host_name: str = ""
+    reliability_pct: int | None = None  # successful sessions / (successful + "not working" reports); None until 3 sessions
+    sessions_completed: int = 0
+    failed_reports: int = 0
+    available_now: bool | None = None
 
 
 class ChargerHostOut(ChargerOut):
@@ -275,6 +303,7 @@ class ChargerSummary(ORM):
     id: int
     title: str
     address: str
+    area: str = ""
     lat: float
     lng: float
     connector_type: str
@@ -307,6 +336,11 @@ class BookingOut(ORM):
     checked_in_at: datetime | None
     completed_at: datetime | None
     charger: ChargerSummary
+    checklist: dict = {}
+    charger_failed: bool = False
+    extended_minutes: int = 0
+    overstay_minutes: int = 0
+    extras: list["ExtraOut"] = []
     # filled in by the API depending on who is asking:
     other_party_name: str = ""
     other_party_phone: str = ""
@@ -327,6 +361,100 @@ class CancelIn(BaseModel):
 
 class CheckInIn(BaseModel):
     qr_token: str
+    checklist: dict = Field(default_factory=dict)  # cable_ok, connector_matches, area_dry (all must be true), note
+
+
+class NotWorkingIn(BaseModel):
+    reason: str = Field(min_length=3, max_length=200)
+
+
+class ExtendIn(BaseModel):
+    minutes: int
+
+
+class ExtraOut(ORM):
+    id: int
+    booking_id: int
+    kind: str
+    minutes: int
+    amount_paise: int
+    status: str
+    refunded_paise: int
+    created_at: datetime
+    paid_at: datetime | None
+
+
+class ExtraCheckoutOut(BaseModel):
+    extra: ExtraOut
+    provider: str
+    checkout_url: str
+
+
+class WaitlistIn(BaseModel):
+    day: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+
+
+class WaitlistOut(ORM):
+    id: int
+    charger_id: int
+    day: str
+    notified_at: datetime | None
+    created_at: datetime
+    charger_title: str = ""
+
+
+# ---------- housing societies ----------
+class CommunityCreate(BaseModel):
+    name: str = Field(min_length=3, max_length=160)
+    address: str = Field(min_length=5, max_length=300)
+    manager_flat: str = Field(min_length=1, max_length=40)
+
+
+class CommunityOut(ORM):
+    id: int
+    name: str
+    address: str
+    code: str
+    status: str
+    admin_note: str
+    manager_id: int
+    created_at: datetime
+    role: str = ""  # manager | member
+    my_status: str = ""  # for members: pending | approved | rejected
+    members_count: int = 0
+    chargers_count: int = 0
+
+
+class JoinIn(BaseModel):
+    code: str = Field(min_length=4, max_length=12)
+    flat: str = Field(min_length=1, max_length=40)
+
+
+class MemberOut(ORM):
+    id: int
+    user_id: int
+    flat: str
+    status: str
+    created_at: datetime
+    name: str = ""
+    phone: str = ""
+
+
+class StatementRow(BaseModel):
+    flat: str
+    name: str
+    sessions: int
+    kwh: float
+    minutes: int
+    amount_paise: int
+
+
+class StatementOut(BaseModel):
+    community: str
+    month: str
+    rows: list[StatementRow]
+    total_kwh: float
+    total_amount_paise: int
 
 
 class CompleteIn(BaseModel):
@@ -395,3 +523,4 @@ class UploadOut(BaseModel):
 
 
 TokenOut.model_rebuild()
+BookingOut.model_rebuild()

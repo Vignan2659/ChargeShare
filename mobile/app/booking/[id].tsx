@@ -1,13 +1,13 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Alert, View } from "react-native";
+import { Alert, Linking, View } from "react-native";
 
 import { api } from "../../src/api";
 import { useAuth } from "../../src/auth";
 import { durationLabel, parseUtc, rupees, slotLabel, STATUS_TEXT } from "../../src/format";
 import { callNumber, openDirections } from "../../src/links";
 import { space } from "../../src/theme";
-import type { Booking } from "../../src/types";
+import type { Booking, ExtraCheckout } from "../../src/types";
 import { Badge, Body, Button, Card, Divider, Empty, Field, H2, InfoRow, Loading, Notice, Row, Screen, Small, useLoad } from "../../src/ui";
 
 export default function BookingScreen() {
@@ -16,6 +16,7 @@ export default function BookingScreen() {
   const { data: b, error, loading, reload, setData } = useLoad(() => api<Booking>(`/bookings/${id}`), [id]);
   const [busy, setBusy] = useState<string | null>(null);
   const [kwh, setKwh] = useState("");
+  const [showBroken, setShowBroken] = useState(false);
 
   if (loading && !b) return <Loading />;
   if (!b) return <Empty title="Couldn't load booking" text={error ?? ""} />;
@@ -58,6 +59,51 @@ export default function BookingScreen() {
       void reload();
     } finally {
       setBusy(null);
+    }
+  }
+
+  function notWorking(reason: string) {
+    if (!b) return;
+    void act("broken", `/bookings/${b.id}/not-working`, { reason }, "We'll cancel this booking and refund you in full right away. The host is told so they can fix it.");
+  }
+
+  async function extend(minutes: number) {
+    if (!b) return;
+    setBusy(`ext${minutes}`);
+    try {
+      const x = await api<ExtraCheckout>(`/bookings/${b.id}/extend`, { body: { minutes } });
+      router.push({
+        pathname: "/pay",
+        params: { bookingId: String(b.id), extraId: String(x.extra.id), provider: x.provider, url: x.checkout_url, amount: String(x.extra.amount_paise) },
+      });
+    } catch (e) {
+      Alert.alert("Can't extend", (e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function payDue(extraId: number) {
+    setBusy(`due${extraId}`);
+    try {
+      const x = await api<ExtraCheckout>(`/payments/extra/${extraId}/checkout`, { method: "POST" });
+      router.push({
+        pathname: "/pay",
+        params: { bookingId: String(id), extraId: String(extraId), provider: x.provider, url: x.checkout_url, amount: String(x.extra.amount_paise) },
+      });
+    } catch (e) {
+      Alert.alert("Couldn't start payment", (e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function receipt() {
+    try {
+      const { url } = await api<{ url: string }>(`/bookings/${id}/receipt-link`);
+      await Linking.openURL(url);
+    } catch (e) {
+      Alert.alert("Couldn't open receipt", (e as Error).message);
     }
   }
 
@@ -120,7 +166,23 @@ export default function BookingScreen() {
           </Row>
         )}
         {b.cancel_reason ? <Small>Note: {b.cancel_reason}</Small> : null}
+        {b.extras.map((x) => (
+          <Row key={x.id} style={{ justifyContent: "space-between" }}>
+            <Small>
+              {x.kind === "extension" ? `Extended ${x.minutes} min` : `Overstay fee (${x.minutes} min)`} ·{" "}
+              {x.status === "due" ? "due" : x.status === "created" ? "not paid" : x.status.replace("_", " ")}
+            </Small>
+            <Small>{rupees(x.amount_paise, 2)}</Small>
+          </Row>
+        ))}
+        {isDriver &&
+          b.extras
+            .filter((x) => x.status === "due")
+            .map((x) => <Button key={x.id} title={`Pay overstay fee ${rupees(x.amount_paise)}`} onPress={() => payDue(x.id)} loading={busy === `due${x.id}`} />)}
       </Card>
+      {!isDriver && b.checklist && b.checklist["at"] ? (
+        <Notice tone="green" icon="shield-checkmark-outline" text="Driver confirmed the safety checklist at check-in: cable OK, connector matches, area dry." />
+      ) : null}
 
       <View style={{ gap: space.sm }}>
         {/* ----- driver actions ----- */}
@@ -139,6 +201,17 @@ export default function BookingScreen() {
               <Button style={{ flex: 1 }} title={`Call ${isDriver ? "host" : "driver"}`} variant="secondary" icon="call" onPress={() => callNumber(b.other_party_phone)} />
             ) : null}
           </Row>
+        )}
+        {isDriver && (b.status === "confirmed" || b.status === "active") && (
+          <Card>
+            <H2>Need more time?</H2>
+            <Small>Extend if the next slot is free. You pay only for the extra time.</Small>
+            <Row>
+              {[15, 30, 60].map((m) => (
+                <Button key={m} style={{ flex: 1 }} title={`+${m} min`} variant="secondary" onPress={() => extend(m)} loading={busy === `ext${m}`} />
+              ))}
+            </Row>
+          </Card>
         )}
         {b.status === "active" && (
           <Card>
@@ -163,6 +236,22 @@ export default function BookingScreen() {
         {/* ----- both ----- */}
         {["pending_payment", "requested", "confirmed"].includes(b.status) && !(isDriver === false && b.status === "requested") && (
           <Button title="Cancel booking" variant="danger" onPress={() => act("cancel", `/bookings/${b.id}/cancel`, { reason: "" }, cancelText())} loading={busy === "cancel"} />
+        )}
+        {isDriver && (b.status === "confirmed" || b.status === "active") && (
+          <>
+            <Button title="Charger not working? Get a full refund" variant="danger" icon="flash-off" onPress={() => setShowBroken(!showBroken)} loading={busy === "broken"} />
+            {showBroken && (
+              <Card>
+                <Small>What's wrong?</Small>
+                {["No power / doesn't start", "Connector doesn't fit", "Damaged or unsafe", "Can't get access"].map((r) => (
+                  <Button key={r} title={r} variant="secondary" onPress={() => notWorking(r)} />
+                ))}
+              </Card>
+            )}
+          </>
+        )}
+        {["completed", "cancelled", "declined", "expired"].includes(b.status) && b.amount_paise > 0 && (
+          <Button title="Download receipt" variant="secondary" icon="receipt-outline" onPress={receipt} />
         )}
         {b.can_review && <Button title={isDriver ? "Rate this charger" : "Rate this driver"} icon="star" onPress={() => router.push(`/review/${b.id}`)} />}
         <Button title="Report a problem" variant="ghost" icon="alert-circle-outline" onPress={() => router.push({ pathname: "/report", params: { bookingId: String(b.id) } })} />

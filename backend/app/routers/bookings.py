@@ -3,14 +3,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .. import schemas
-from ..config import get_settings
 from ..db import get_db
 from ..models import Booking, BookingStatus, Charger, Payment, User
 from ..security import get_current_user
 from ..serializers import booking_out
 from ..services import booking_logic, payments
 from ..services.timeutil import to_utc_naive
-from .payments import make_pay_token
+from .payments import checkout_url, make_pay_token
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 
@@ -29,12 +28,16 @@ def quote(body: schemas.QuoteIn, user: User = Depends(get_current_user), db: Ses
         raise HTTPException(404, "Charger not found")
     start, end = _times(body)
     minutes = int((end - start).total_seconds() // 60)
-    amount = booking_logic.estimate_amount(charger, minutes)
+    amount = booking_logic.estimate_amount(charger, minutes, start)
     note = (
         "You pay the maximum upfront. Unused units are refunded after charging."
         if charger.pricing_mode == "kwh"
         else "Fixed price for the time slot."
     )
+    if charger.offpeak_price_paise:
+        note += f" Off-peak rate applies {charger.offpeak_start}–{charger.offpeak_end}."
+    if charger.idle_fee_paise:
+        note += f" Overstay fee: ₹{charger.idle_fee_paise / 100:.0f} per 15 min after a 15-min grace period."
     return schemas.QuoteOut(amount_paise=amount, minutes=minutes, pricing_mode=charger.pricing_mode, note=note)
 
 
@@ -47,7 +50,7 @@ def create(body: schemas.BookingCreate, user: User = Depends(get_current_user), 
         raise HTTPException(404, "Charger not found")
     start, end = _times(body)
     minutes = booking_logic.validate_new_booking(db, charger, user, start, end, body.vehicle_type)
-    amount = booking_logic.estimate_amount(charger, minutes)
+    amount = booking_logic.estimate_amount(charger, minutes, start)
 
     b = Booking(
         charger_id=charger.id,
@@ -58,7 +61,7 @@ def create(body: schemas.BookingCreate, user: User = Depends(get_current_user), 
         vehicle_type=body.vehicle_type,
         vehicle_note=body.vehicle_note,
         pricing_mode=charger.pricing_mode,
-        unit_price_paise=charger.price_paise,
+        unit_price_paise=booking_logic.blended_unit_price(charger, amount, minutes),
         amount_paise=amount,
     )
     db.add(b)
@@ -71,11 +74,7 @@ def create(body: schemas.BookingCreate, user: User = Depends(get_current_user), 
     db.add(Payment(booking_id=b.id, provider=payments.provider(), order_id=order_id, amount_paise=amount))
     db.commit()
     db.refresh(b)
-
-    checkout_url = ""
-    if payments.provider() == "razorpay":
-        checkout_url = f"{get_settings().public_base_url}/pay/{b.id}?t={make_pay_token(b.id)}"
-    return schemas.CheckoutOut(booking=booking_out(db, b, user), provider=payments.provider(), checkout_url=checkout_url)
+    return schemas.CheckoutOut(booking=booking_out(db, b, user), provider=payments.provider(), checkout_url=checkout_url(b.id))
 
 
 @router.get("", response_model=list[schemas.BookingOut])
@@ -127,7 +126,25 @@ def check_in(booking_id: int, body: schemas.CheckInIn, user: User = Depends(get_
     b = _visible(db, booking_id, user)
     if b.driver_id != user.id:
         raise HTTPException(403, "Only the driver can check in")
-    return booking_out(db, booking_logic.check_in(db, b, body.qr_token), user)
+    return booking_out(db, booking_logic.check_in(db, b, body.qr_token, body.checklist), user)
+
+
+@router.post("/{booking_id}/not-working", response_model=schemas.BookingOut)
+def not_working(booking_id: int, body: schemas.NotWorkingIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Driver is at the charger and it doesn't work: instant full refund."""
+    b = _visible(db, booking_id, user)
+    if b.driver_id != user.id:
+        raise HTTPException(403, "Only the driver can report this")
+    return booking_out(db, booking_logic.report_not_working(db, b, body.reason), user)
+
+
+@router.post("/{booking_id}/extend", response_model=schemas.ExtraCheckoutOut)
+def extend(booking_id: int, body: schemas.ExtendIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    b = _visible(db, booking_id, user)
+    if b.driver_id != user.id:
+        raise HTTPException(403, "Only the driver can extend a booking")
+    x = booking_logic.request_extension(db, b, body.minutes)
+    return schemas.ExtraCheckoutOut(extra=schemas.ExtraOut.model_validate(x), provider=payments.provider(), checkout_url=checkout_url(x.id, "extra"))
 
 
 @router.post("/{booking_id}/complete", response_model=schemas.BookingOut)
@@ -135,7 +152,17 @@ def complete(booking_id: int, body: schemas.CompleteIn, user: User = Depends(get
     b = _visible(db, booking_id, user)
     if b.status != BookingStatus.ACTIVE:
         raise HTTPException(400, "Charging hasn't started yet. Scan the charger's QR code first.")
-    return booking_out(db, booking_logic.complete(db, b, kwh_used=body.kwh_used), user)
+    by = "driver" if b.driver_id == user.id else "host" if b.host_id == user.id else "admin"
+    return booking_out(db, booking_logic.complete(db, b, kwh_used=body.kwh_used, by=by), user)
+
+
+@router.get("/{booking_id}/receipt-link")
+def receipt_link(booking_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """A short-lived link to the printable receipt (opens in the phone's browser)."""
+    from ..config import get_settings
+
+    b = _visible(db, booking_id, user)
+    return {"url": f"{get_settings().public_base_url}/receipts/{b.id}?t={make_pay_token(b.id, 'receipt')}"}
 
 
 def _visible(db: Session, booking_id: int, user: User) -> Booking:

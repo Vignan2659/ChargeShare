@@ -13,6 +13,8 @@ from ..models import (
     BookingStatus,
     Charger,
     ChargerStatus,
+    Community,
+    ExtraCharge,
     HostStatus,
     Payout,
     Report,
@@ -20,7 +22,7 @@ from ..models import (
     utcnow,
 )
 from ..security import require_admin
-from ..serializers import booking_out, charger_out, charger_ratings
+from ..serializers import booking_out, charger_out, charger_ratings, charger_stats
 from ..services import booking_logic, push, storage
 from ..services.booking_logic import _refund
 
@@ -76,6 +78,11 @@ def stats(db: Session = Depends(get_db)):
         "gross_paise": db.scalar(select(func.coalesce(func.sum(Booking.final_amount_paise), 0))) or 0,
         "commission_paise": db.scalar(select(func.coalesce(func.sum(Booking.commission_paise), 0))) or 0,
         "reports_open": count(select(Report).where(Report.status == "open")),
+        "chargers_offline": count(select(Charger).where(Charger.status == ChargerStatus.APPROVED, Charger.offline.is_(True))),
+        "not_working_reports_7d": count(select(Booking).where(Booking.charger_failed.is_(True), Booking.start_at >= week)),
+        "communities_pending": count(select(Community).where(Community.status == "pending")),
+        "dues_outstanding_paise": db.scalar(select(func.coalesce(func.sum(ExtraCharge.amount_paise), 0)).where(ExtraCharge.status == "due")) or 0,
+        "commission_overstay_paise": db.scalar(select(func.coalesce(func.sum(ExtraCharge.commission_paise), 0))) or 0,
         "payouts_pending_paise": db.scalar(
             select(func.coalesce(func.sum(Payout.amount_paise), 0)).where(Payout.status == "pending")
         )
@@ -130,8 +137,73 @@ def chargers(status: str | None = None, db: Session = Depends(get_db), limit: in
     if status:
         stmt = stmt.where(Charger.status == status)
     rows = db.scalars(stmt.limit(limit)).all()
-    ratings = charger_ratings(db, [c.id for c in rows])
-    return [charger_out(c, ratings, for_host=True) for c in rows]
+    ids = [c.id for c in rows]
+    ratings, st = charger_ratings(db, ids), charger_stats(db, ids)
+    return [charger_out(c, ratings, for_host=True, stats=st) for c in rows]
+
+
+class OfflineIn(BaseModel):
+    offline: bool
+    reason: str = Field(default="", max_length=200)
+
+
+@router.post("/chargers/{charger_id}/offline", response_model=schemas.ChargerHostOut)
+def set_offline(charger_id: int, body: OfflineIn, db: Session = Depends(get_db)):
+    c = _charger(db, charger_id)
+    c.offline, c.offline_reason = body.offline, (body.reason if body.offline else "")
+    db.commit()
+    push.notify(c.host, "Charger status changed", f"{c.title} is now {'offline' if body.offline else 'back online'}. {body.reason}".strip())
+    return charger_out(c, for_host=True, stats=charger_stats(db, [c.id]))
+
+
+@router.get("/flags")
+def flags(db: Session = Depends(get_db)):
+    """Things to look at: unreliable chargers and drivers who report 'not working' unusually often."""
+    month = utcnow() - timedelta(days=30)
+    chargers_all = db.scalars(select(Charger).where(Charger.status.in_((ChargerStatus.APPROVED, ChargerStatus.PAUSED)))).all()
+    st = charger_stats(db, [c.id for c in chargers_all])
+    weak = []
+    for c in chargers_all:
+        ok, bad = st.get(c.id, (0, 0))
+        if bad and (ok + bad < 3 or ok / (ok + bad) < 0.8):
+            weak.append({"charger_id": c.id, "title": c.title, "host": c.host.name, "successful": ok, "not_working": bad, "offline": c.offline})
+    claims = db.execute(
+        select(Booking.driver_id, func.count()).where(Booking.charger_failed.is_(True), Booking.start_at >= month).group_by(Booking.driver_id)
+    ).all()
+    drivers = [
+        {"user_id": uid, "name": db.get(User, uid).name, "phone": db.get(User, uid).phone, "claims_30d": n}
+        for uid, n in claims if n >= 3
+    ]
+    return {"unreliable_chargers": weak, "frequent_claimers": drivers}
+
+
+# ---------- housing societies ----------
+@router.get("/communities", response_model=list[schemas.CommunityOut])
+def communities(status: str | None = None, db: Session = Depends(get_db)):
+    from .communities import community_out
+
+    stmt = select(Community).order_by(Community.created_at.desc())
+    if status:
+        stmt = stmt.where(Community.status == status)
+    return [community_out(db, c) for c in db.scalars(stmt).all()]
+
+
+@router.post("/communities/{community_id}/{action}", response_model=schemas.CommunityOut)
+def decide_community(community_id: int, action: str, body: NoteIn, db: Session = Depends(get_db)):
+    from .communities import community_out
+
+    c = db.get(Community, community_id)
+    if c is None:
+        raise HTTPException(404, "Society not found")
+    if action not in ("approve", "reject"):
+        raise HTTPException(400, "Action must be approve or reject")
+    c.status, c.admin_note = ("approved" if action == "approve" else "rejected"), body.note
+    db.commit()
+    push.notify(
+        c.manager, c.name,
+        f"Approved! Share join code {c.code} with residents." if action == "approve" else (body.note or "Your society was not approved."),
+    )
+    return community_out(db, c)
 
 
 @router.post("/chargers/{charger_id}/approve", response_model=schemas.ChargerHostOut)
@@ -190,7 +262,9 @@ def refund_booking(booking_id: int, body: RefundIn, admin: User = Depends(requir
         b.commission_paise, b.host_earning_paise = booking_logic.split_commission(b.final_amount_paise)
         if b.payout_id:  # keep a pending payout in sync
             p = db.get(Payout, b.payout_id)
-            p.amount_paise = sum(x.host_earning_paise for x in db.scalars(select(Booking).where(Booking.payout_id == p.id)))
+            p.amount_paise = sum(x.host_earning_paise for x in db.scalars(select(Booking).where(Booking.payout_id == p.id))) + sum(
+                x.host_earning_paise for x in db.scalars(select(ExtraCharge).where(ExtraCharge.payout_id == p.id))
+            )
     b.cancel_reason = (b.cancel_reason + f" | Admin refund: {body.reason}").strip(" |")
     db.commit()
     push.notify(b.driver, "Refund issued", f"₹{refunded / 100:.0f} is on its way back to you.")
@@ -225,22 +299,25 @@ def generate_payouts(db: Session = Depends(get_db)):
     rows = db.scalars(
         select(Booking).where(Booking.payout_id.is_(None), Booking.host_earning_paise > 0)
     ).all()
-    by_host: dict[int, list[Booking]] = {}
-    for b in rows:
-        by_host.setdefault(b.host_id, []).append(b)
+    extras = db.scalars(
+        select(ExtraCharge).where(ExtraCharge.payout_id.is_(None), ExtraCharge.kind == "overstay", ExtraCharge.host_earning_paise > 0)
+    ).all()
+    by_host: dict[int, list] = {}
+    for item in [*rows, *extras]:
+        by_host.setdefault(item.host_id, []).append(item)
     created = []
     for host_id, items in by_host.items():
         host = db.get(User, host_id)
         p = Payout(
             host_id=host_id,
-            amount_paise=sum(b.host_earning_paise for b in items),
-            booking_count=len(items),
+            amount_paise=sum(x.host_earning_paise for x in items),
+            booking_count=sum(1 for x in items if isinstance(x, Booking)),
             upi_id=host.payout_upi if host else "",
         )
         db.add(p)
         db.flush()
-        for b in items:
-            b.payout_id = p.id
+        for x in items:
+            x.payout_id = p.id
         created.append(p)
     db.commit()
     return [_payout_out(p) for p in created]

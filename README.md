@@ -14,6 +14,21 @@ ChargeShare/
 
 **What works today, in test mode (no accounts needed):** OTP login (the code prints in the terminal), host verification, adding chargers with photos and map location, admin approval, map search, slot booking, test payment, host accept/decline, QR check-in, per-hour and per-kWh billing with automatic refunds, cancellation rules, ratings, problem reports, push notifications, weekly payouts, account deletion.
 
+**Features that fix common complaints about other charging apps:**
+
+| Problem with other apps | What ChargeShare does | Where in the code |
+| --- | --- | --- |
+| Broken chargers and slow refunds | "Charger not working" button gives an instant full refund; reliability % on every charger; 2 reports in a week take it offline automatically; hosts can mark "temporarily unavailable" | `booking_logic.report_not_working`, `serializers.charger_stats` |
+| Too many apps and wallets | No wallet: pay each booking by UPI; printable receipt per session | `routers/receipts.py` |
+| Overstaying, rigid slots | Extend a slot (pay only for the extra time); optional overstay fee after a 15-min grace period; unpaid dues pause new bookings | `request_extension`, `complete(..., by=)`, `ExtraCharge` |
+| Exact home shown on a public map | Approximate pin and area only, until the host confirms | `serializers.fuzz` |
+| No time-of-day pricing | Off-peak rate for a time window, priced in 15-minute steps | `booking_logic.window_price` |
+| Housing-society disputes | Society mode: residents-only chargers, join codes, manager approvals, monthly per-flat usage statement | `routers/communities.py` |
+| Busy chargers | Waitlist push when a slot opens; "Available now" filter | `notify_waitlist`, `search(available_now=)` |
+| No evidence in disputes | Safety checklist at check-in, saved with a timestamp | `booking_logic.check_in` |
+
+> Upgrading from an earlier copy? Delete `backend/chargeshare.db` and run `python -m app.seed` again. New tables and columns are created on start, but SQLite can't add columns to existing tables.
+
 **Real-money mode** needs the accounts in Part B. Switching over only means filling in keys. No code changes.
 
 ---
@@ -59,7 +74,7 @@ Demo logins (created by the seed step):
 | --- | --- |
 | Admin | 9000000001 |
 | Host with 5 chargers | 9000000002 |
-| Driver | 9000000003 |
+| Driver (also a resident of the demo society, join code LAKE01) | 9000000003 |
 
 ### A3. Start the mobile app
 

@@ -62,6 +62,10 @@ export default function Profile() {
         <Divider />
         <Item icon="wallet-outline" label="Earnings and payouts" onPress={() => router.push("/host/earnings")} />
         <Divider />
+        <Item icon="business-outline" label="My housing society" onPress={() => router.push("/society")} />
+        <Divider />
+        <Item icon="receipt-outline" label="Pending dues" onPress={() => router.push("/dues")} />
+        <Divider />
         <Item icon="alert-circle-outline" label="Report a problem" onPress={() => router.push("/report")} />
         {SUPPORT ? (
           <>

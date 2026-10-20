@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from .. import schemas
 from ..db import get_db
-from ..models import Booking, BookingStatus, Charger, ChargerStatus, HostStatus, Payout, User, utcnow
+from ..models import Booking, BookingStatus, Charger, ChargerStatus, ExtraCharge, HostStatus, Payout, User, utcnow
 from ..security import get_current_user
 from ..services import booking_logic
 from ..services.timeutil import to_utc_naive, tz
@@ -44,7 +44,11 @@ def apply_as_host(body: schemas.HostApplication, user: User = Depends(get_curren
 @router.get("/earnings", response_model=schemas.EarningsOut)
 def earnings(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     earned_q = select(Booking).where(Booking.host_id == user.id, Booking.host_earning_paise > 0)
-    rows = db.scalars(earned_q).all()
+    bookings = db.scalars(earned_q).all()
+    overstay = db.scalars(
+        select(ExtraCharge).where(ExtraCharge.host_id == user.id, ExtraCharge.kind == "overstay", ExtraCharge.host_earning_paise > 0)
+    ).all()
+    rows = [*bookings, *overstay]
     local_now = datetime.now(tz())
     month_start_local = local_now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     month_start = to_utc_naive(month_start_local)
@@ -58,9 +62,11 @@ def earnings(user: User = Depends(get_current_user), db: Session = Depends(get_d
         )
     )
     return schemas.EarningsOut(
-        completed_sessions=sum(1 for b in rows if b.status == BookingStatus.COMPLETED),
+        completed_sessions=sum(1 for b in bookings if b.status == BookingStatus.COMPLETED),
         total_earned_paise=sum(b.host_earning_paise for b in rows),
-        this_month_paise=sum(b.host_earning_paise for b in rows if (b.completed_at or b.created_at) >= month_start),
+        this_month_paise=sum(
+            b.host_earning_paise for b in rows if (getattr(b, "completed_at", None) or getattr(b, "paid_at", None) or b.created_at) >= month_start
+        ),
         pending_payout_paise=sum(
             b.host_earning_paise for b in rows if b.payout_id is None or _payout_pending(db, b.payout_id)
         ),
